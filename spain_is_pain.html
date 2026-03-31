@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spain is Pain — League Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0c0b;
+  --surface: #1a1714;
+  --surface2: #242019;
+  --border: #3a3228;
+  --text: #f0e6d6;
+  --muted: #8a7e6e;
+  --gold: #d4a843;
+  --gold-dim: #b8922e;
+  --red: #c9413b;
+  --red-bright: #e85550;
+  --green: #4caf6a;
+  --green-dim: #2d7a42;
+  --blue: #4a8cc9;
+  --orange: #d98a3b;
+  --font: 'Outfit', sans-serif;
+  --mono: 'Space Mono', monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { background: var(--bg); color: var(--text); font-family: var(--font); }
+body { min-height:100vh; padding:0; }
+
+/* ── Header ── */
+header {
+  background: linear-gradient(135deg, #1a0a08 0%, #2a1510 50%, #1a0a08 100%);
+  border-bottom: 2px solid var(--gold-dim);
+  padding: 28px 32px 24px;
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(212,168,67,0.03) 60px, rgba(212,168,67,0.03) 61px);
+}
+header h1 {
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  position: relative;
+  background: linear-gradient(to right, var(--gold), #f0d078, var(--gold));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+header .subtitle {
+  font-size: .85rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 4px;
+  position: relative;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ── Nav ── */
+nav {
+  display: flex; gap: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+nav button {
+  flex: 1;
+  padding: 14px 16px;
+  background: none; border: none;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+nav button:hover { color: var(--text); background: rgba(212,168,67,0.05); }
+nav button.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── Tab panels ── */
+.tab { display: none; padding: 24px; max-width: 960px; margin: 0 auto; }
+.tab.active { display: block; }
+
+/* ── Teams Grid ── */
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.team-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .15s, border-color .2s;
+}
+.team-card:hover { transform: translateY(-2px); border-color: var(--gold-dim); }
+.team-card .rank {
+  position: absolute; top: 12px; right: 14px;
+  font-family: var(--mono); font-size: .7rem; color: var(--muted);
+}
+.team-card .name {
+  font-size: 1.15rem; font-weight: 700;
+  margin-bottom: 2px;
+}
+.team-card .region {
+  font-size: .72rem; color: var(--muted); letter-spacing: 1px;
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.team-card .value {
+  font-family: var(--mono); font-size: 1.3rem; font-weight: 700;
+  color: var(--gold);
+}
+.team-card .value-delta {
+  font-family: var(--mono); font-size: .7rem;
+  margin-left: 6px;
+}
+.delta-pos { color: var(--green); }
+.delta-neg { color: var(--red-bright); }
+.team-card .bar-bg {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.team-card .bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  transition: width .6s ease;
+}
+
+/* ── Standings Table ── */
+table.standings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .85rem;
+}
+table.standings th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: .7rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+table.standings td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(58,50,40,0.4);
+  vertical-align: middle;
+}
+table.standings tr:hover td { background: rgba(212,168,67,0.03); }
+table.standings .pos {
+  font-family: var(--mono); font-weight: 700; color: var(--muted);
+  width: 32px;
+}
+table.standings .team-name { font-weight: 600; }
+table.standings .val {
+  font-family: var(--mono); color: var(--gold); font-weight: 600;
+}
+table.standings .w { color: var(--green); }
+table.standings .l { color: var(--red-bright); }
+table.standings .mono { font-family: var(--mono); }
+
+/* ── Matchday Panel ── */
+.matchday-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.matchday-header h2 {
+  font-size: 1.4rem; font-weight: 800;
+}
+.matchday-header .round-badge {
+  font-family: var(--mono); font-size: .75rem;
+  background: var(--surface2); color: var(--gold);
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.btn {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+  color: #0e0c0b;
+  font-family: var(--font);
+  font-size: .85rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: .5px;
+  transition: all .15s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212,168,67,0.25); }
+.btn:disabled { opacity: 0.35; cursor: default; transform: none; box-shadow: none; }
+.btn-sm { padding: 8px 18px; font-size: .78rem; }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+}
+.btn-outline:hover { background: rgba(212,168,67,0.1); }
+.btn-reset {
+  background: transparent; border: 1px solid var(--red);
+  color: var(--red-bright);
+}
+.btn-reset:hover { background: rgba(201,65,59,0.1); }
+
+/* ── Match Card ── */
+.match-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.match-card.played { border-color: rgba(212,168,67,0.2); }
+.match-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 16px;
+}
+.match-team {
+  display: flex; align-items: center; gap: 10px;
+}
+.match-team.right { justify-content: flex-end; text-align: right; }
+.match-team .mname { font-weight: 600; font-size: .95rem; }
+.match-team .mval {
+  font-family: var(--mono); font-size: .72rem; color: var(--muted);
+}
+.match-vs {
+  font-family: var(--mono); font-size: .7rem; color: var(--muted);
+  letter-spacing: 2px; text-transform: uppercase;
+  min-width: 40px; text-align: center;
+}
+.match-details {
+  background: var(--surface2);
+  padding: 12px 20px;
+  font-size: .78rem;
+  color: var(--muted);
+  display: flex; gap: 24px; flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+}
+.match-details .tag {
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.match-details .tag b { color: var(--text); font-weight: 600; }
+.winner-tag {
+  font-size: .65rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px;
+  background: rgba(76,175,106,0.15); color: var(--green);
+}
+.loser-tag {
+  font-size: .65rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px;
+  background: rgba(232,85,80,0.1); color: var(--red-bright);
+}
+
+/* ── Match Log ── */
+.log-section { margin-top: 28px; }
+.log-section h3 {
+  font-size: .75rem; color: var(--muted);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.log-entry {
+  font-family: var(--mono); font-size: .72rem;
+  color: var(--muted);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(58,50,40,0.3);
+  line-height: 1.5;
+}
+.log-entry b { color: var(--text); }
+.log-entry .steal { color: var(--orange); }
+.log-entry .no-steal { color: var(--muted); font-style: italic; }
+
+/* ── History tab ── */
+.history-round {
+  margin-bottom: 24px;
+}
+.history-round h3 {
+  font-size: .9rem; font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--gold);
+}
+.history-match {
+  font-size: .82rem;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(58,50,40,0.3);
+}
+.history-match .hw { font-weight: 700; color: var(--green); }
+.history-match .hl { color: var(--muted); }
+
+/* ── Controls bar ── */
+.controls {
+  display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn .35s ease both; }
+
+/* ── Season complete banner ── */
+.season-banner {
+  background: linear-gradient(135deg, #2a1a08, #1a1510);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.season-banner h2 {
+  font-size: 1.8rem; font-weight: 900;
+  background: linear-gradient(to right, var(--gold), #f0d078);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.season-banner .champion {
+  font-size: 1.1rem; color: var(--text); margin-bottom: 4px;
+}
+.season-banner .champ-val {
+  font-family: var(--mono); color: var(--gold); font-size: 1.3rem;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Spain is Pain</h1>
+  <div class="subtitle">League Simulator · Round-Robin · 8 Teams</div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('sim')">Matchday</button>
+  <button onclick="showTab('standings')">Standings</button>
+  <button onclick="showTab('teams')">Teams</button>
+  <button onclick="showTab('history')">History</button>
+</nav>
+
+<div id="tab-sim" class="tab active"></div>
+<div id="tab-standings" class="tab"></div>
+<div id="tab-teams" class="tab"></div>
+<div id="tab-history" class="tab"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+const INITIAL_TEAMS = [
+  { name:'Madrid',      region:'Madrid · Madrid',               value:3506730 },
+  { name:'Barcelona',   region:'Catalunya · Barcelona',          value:1731649 },
+  { name:'Madrid II',   region:'Madrid · Madrid',               value:876683 },
+  { name:'València',    region:'Com. Valenciana · València',     value:840792 },
+  { name:'Zaragoza',    region:'Aragón · Zaragoza',             value:693091 },
+  { name:'Sevilla',     region:'Andalucía · Sevilla',           value:689423 },
+  { name:'Málaga',      region:'Andalucía · Málaga',            value:599063 },
+  { name:'Murcia',      region:'Murcia · Murcia',               value:479405 },
+];
+
+let teams = [];
+let schedule = [];
+let currentRound = 0;
+let currentMatch = 0;
+let matchLog = [];
+let roundResults = []; // [ [ {home,away,winner,loser,roll,threshold,stolen,details}, ... ], ... ]
+let seasonComplete = false;
+
+// ═══════════════════════════════════════════════════════════════
+// ROUND-ROBIN SCHEDULE (circle method)
+// ═══════════════════════════════════════════════════════════════
+function generateSchedule(n) {
+  // Circle method: fix team 0, rotate others
+  const rounds = [];
+  const ids = Array.from({length:n}, (_,i)=>i);
+  const fixed = ids[0];
+  const rotating = ids.slice(1);
+
+  for (let r = 0; r < n - 1; r++) {
+    const round = [];
+    // Fixed team vs first in rotation
+    round.push([fixed, rotating[0]]);
+    // Pair from ends inward
+    for (let i = 1; i < n/2; i++) {
+      round.push([rotating[i], rotating[n - 2 - i]]);
+    }
+    rounds.push(round);
+    // Rotate: move last to first
+    rotating.unshift(rotating.pop());
+  }
+  return rounds;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAME ENGINE
+// ═══════════════════════════════════════════════════════════════
+function simulateMatch(homeIdx, awayIdx) {
+  const home = teams[homeIdx];
+  const away = teams[awayIdx];
+
+  const best = Math.max(home.value, away.value);
+  const worst = Math.min(home.value, away.value);
+  const ratio = worst / best; // 0..1
+  const threshold = Math.floor(ratio * 100); // 1..100 range mapped into 1..200
+
+  const roll = Math.floor(Math.random() * 200) + 1; // 1..200
+  const worstWins = roll <= threshold;
+
+  const bestIsHome = home.value >= away.value;
+  const winnerIdx = worstWins ? (bestIsHome ? awayIdx : homeIdx) : (bestIsHome ? homeIdx : awayIdx);
+  const loserIdx = winnerIdx === homeIdx ? awayIdx : homeIdx;
+
+  const winner = teams[winnerIdx];
+  const loser = teams[loserIdx];
+
+  // Steal logic: only if loser originally > 50% of winner
+  let stolen = 0;
+  let stealBlocked = false;
+  const loserRatio = loser.value / winner.value;
+  if (loserRatio > 0.5) {
+    stolen = Math.round(loser.value * 0.1);
+    winner.value += stolen;
+    loser.value -= stolen;
+  } else {
+    stealBlocked = true;
+  }
+
+  // Track W/L
+  winner.wins++;
+  loser.losses++;
+
+  return {
+    homeIdx, awayIdx,
+    homeName: home.name, awayName: away.name,
+    homeVal: home.value, awayVal: away.value,
+    winnerIdx, loserIdx,
+    winnerName: winner.name, loserName: loser.name,
+    roll, threshold, ratio: ratio.toFixed(4),
+    worstWins,
+    stolen, stealBlocked,
+    bestName: bestIsHome ? home.name : away.name,
+    worstName: bestIsHome ? away.name : home.name,
+    preHomeVal: home.value + (winnerIdx === homeIdx ? -stolen : stolen),
+    preAwayVal: away.value + (winnerIdx === awayIdx ? -stolen : stolen),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════════
+function fmt(n) {
+  return n.toLocaleString('es-ES');
+}
+
+function pct(n, total) {
+  return ((n / total) * 100).toFixed(1) + '%';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT / RESET
+// ═══════════════════════════════════════════════════════════════
+function initSeason() {
+  teams = INITIAL_TEAMS.map(t => ({
+    ...t,
+    value: t.value,
+    startValue: t.value,
+    wins: 0,
+    losses: 0,
+  }));
+  schedule = generateSchedule(8);
+  currentRound = 0;
+  currentMatch = 0;
+  matchLog = [];
+  roundResults = schedule.map(() => []);
+  seasonComplete = false;
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIMULATION CONTROLS
+// ═══════════════════════════════════════════════════════════════
+function playNextMatch() {
+  if (seasonComplete) return;
+  const pair = schedule[currentRound][currentMatch];
+  const result = simulateMatch(pair[0], pair[1]);
+  roundResults[currentRound].push(result);
+  matchLog.push({ round: currentRound, match: currentMatch, ...result });
+
+  currentMatch++;
+  if (currentMatch >= schedule[currentRound].length) {
+    currentMatch = 0;
+    currentRound++;
+    if (currentRound >= schedule.length) {
+      seasonComplete = true;
+    }
+  }
+  renderAll();
+}
+
+function playFullRound() {
+  if (seasonComplete) return;
+  const targetRound = currentRound;
+  while (currentRound === targetRound && !seasonComplete) {
+    playNextMatch();
+  }
+}
+
+function playAllRemaining() {
+  while (!seasonComplete) {
+    playNextMatch();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active');
+  renderAll();
+}
+
+function renderAll() {
+  renderSim();
+  renderStandings();
+  renderTeams();
+  renderHistory();
+}
+
+// ── Matchday Tab ──
+function renderSim() {
+  const el = document.getElementById('tab-sim');
+  let html = '';
+
+  if (seasonComplete) {
+    const sorted = [...teams].sort((a, b) => b.value - a.value);
+    const champ = sorted[0];
+    html += `<div class="season-banner fade-in">
+      <h2>🏆 Season Complete</h2>
+      <div class="champion">${champ.name}</div>
+      <div class="champ-val">${fmt(champ.value)}</div>
+    </div>`;
+  }
+
+  // Controls
+  const displayRound = seasonComplete ? schedule.length : currentRound;
+  html += `<div class="controls">`;
+  if (!seasonComplete) {
+    html += `<button class="btn" onclick="playNextMatch()">Play Next Match</button>`;
+    html += `<button class="btn btn-outline btn-sm" onclick="playFullRound()">Sim Full Round</button>`;
+    html += `<button class="btn btn-outline btn-sm" onclick="playAllRemaining()">Sim All</button>`;
+  }
+  html += `<button class="btn btn-reset btn-sm" onclick="initSeason()" style="margin-left:auto">Reset</button>`;
+  html += `</div>`;
+
+  // Show current/upcoming round
+  const showRound = seasonComplete ? schedule.length - 1 : currentRound;
+  const showRoundLabel = showRound + 1;
+  const playedInRound = roundResults[showRound] || [];
+
+  html += `<div class="matchday-header">
+    <h2>Matchday ${showRoundLabel}</h2>
+    <span class="round-badge">${playedInRound.length} / ${schedule[showRound]?.length || 4} played</span>
+  </div>`;
+
+  // Matches in this round
+  const pairs = schedule[showRound] || [];
+  pairs.forEach((pair, mi) => {
+    const res = playedInRound[mi];
+    const home = teams[pair[0]];
+    const away = teams[pair[1]];
+
+    if (res) {
+      const homeWon = res.winnerIdx === pair[0];
+      const awayWon = res.winnerIdx === pair[1];
+      html += `<div class="match-card played fade-in">
+        <div class="match-row">
+          <div class="match-team">
+            <div>
+              <div class="mname">${res.homeName} ${homeWon ? '<span class="winner-tag">WIN</span>' : '<span class="loser-tag">LOSS</span>'}</div>
+              <div class="mval">${fmt(res.preHomeVal)}</div>
+            </div>
+          </div>
+          <div class="match-vs">vs</div>
+          <div class="match-team right">
+            <div>
+              <div class="mname">${awayWon ? '<span class="winner-tag">WIN</span> ' : '<span class="loser-tag">LOSS</span> '}${res.awayName}</div>
+              <div class="mval">${fmt(res.preAwayVal)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="match-details">
+          <span class="tag">Ratio: <b>${(res.ratio * 1).toFixed(2)}</b></span>
+          <span class="tag">Threshold: <b>${res.threshold}/200</b></span>
+          <span class="tag">Roll: <b>${res.roll}</b></span>
+          <span class="tag">${res.worstWins ? '🎲 Upset!' : '📊 Favored wins'}</span>
+          <span class="tag">${res.stealBlocked
+            ? '<span class="no-steal">No steal (≤50% rule)</span>'
+            : '<span class="steal" style="color:var(--orange)">Stole ' + fmt(res.stolen) + ' from ' + res.loserName + '</span>'
+          }</span>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="match-card">
+        <div class="match-row">
+          <div class="match-team">
+            <div>
+              <div class="mname">${home.name}</div>
+              <div class="mval">${fmt(home.value)}</div>
+            </div>
+          </div>
+          <div class="match-vs">vs</div>
+          <div class="match-team right">
+            <div>
+              <div class="mname">${away.name}</div>
+              <div class="mval">${fmt(away.value)}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+  });
+
+  // Quick log of last few events
+  if (matchLog.length > 0) {
+    const recent = matchLog.slice(-6).reverse();
+    html += `<div class="log-section">
+      <h3>Recent Results</h3>
+      ${recent.map(r => `<div class="log-entry">
+        <b>R${r.round+1}:</b> <b>${r.winnerName}</b> def. ${r.loserName}
+        · roll ${r.roll}/${r.threshold*2} threshold ${r.threshold}
+        ${r.stealBlocked ? '<span class="no-steal">· no steal</span>' : '<span class="steal">· stole ' + fmt(r.stolen) + '</span>'}
+      </div>`).join('')}
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Standings Tab ──
+function renderStandings() {
+  const el = document.getElementById('tab-standings');
+  const sorted = [...teams].sort((a, b) => b.value - a.value);
+  const maxVal = sorted[0]?.value || 1;
+
+  let html = `<table class="standings">
+    <thead><tr>
+      <th>#</th><th>Team</th><th>Value</th><th>Δ</th><th>W</th><th>L</th><th>Win%</th><th></th>
+    </tr></thead><tbody>`;
+
+  sorted.forEach((t, i) => {
+    const delta = t.value - t.startValue;
+    const played = t.wins + t.losses;
+    const winPct = played > 0 ? ((t.wins / played) * 100).toFixed(0) + '%' : '—';
+    const barW = ((t.value / maxVal) * 100).toFixed(1);
+    html += `<tr>
+      <td class="pos">${i + 1}</td>
+      <td class="team-name">${t.name}</td>
+      <td class="val">${fmt(t.value)}</td>
+      <td class="mono ${delta >= 0 ? 'delta-pos' : 'delta-neg'}" style="font-size:.75rem">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
+      <td class="mono w">${t.wins}</td>
+      <td class="mono l">${t.losses}</td>
+      <td class="mono" style="color:var(--muted)">${winPct}</td>
+      <td style="width:120px"><div style="background:var(--surface2);height:6px;border-radius:3px;overflow:hidden"><div style="width:${barW}%;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:3px;transition:width .5s"></div></div></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+// ── Teams Tab ──
+function renderTeams() {
+  const el = document.getElementById('tab-teams');
+  const maxVal = Math.max(...teams.map(t => t.value));
+  const sorted = [...teams].sort((a, b) => b.value - a.value);
+
+  let html = `<div class="teams-grid">`;
+  sorted.forEach((t, i) => {
+    const delta = t.value - t.startValue;
+    const barW = ((t.value / maxVal) * 100).toFixed(1);
+    html += `<div class="team-card fade-in">
+      <span class="rank">#${i + 1}</span>
+      <div class="name">${t.name}</div>
+      <div class="region">${t.region}</div>
+      <div>
+        <span class="value">${fmt(t.value)}</span>
+        ${delta !== 0 ? `<span class="value-delta ${delta > 0 ? 'delta-pos' : 'delta-neg'}">${delta > 0 ? '+' : ''}${fmt(delta)}</span>` : ''}
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ── History Tab ──
+function renderHistory() {
+  const el = document.getElementById('tab-history');
+  if (matchLog.length === 0) {
+    el.innerHTML = `<p style="color:var(--muted);text-align:center;padding:40px">No matches played yet.</p>`;
+    return;
+  }
+
+  let html = '';
+  for (let r = 0; r < schedule.length; r++) {
+    const results = roundResults[r];
+    if (results.length === 0) break;
+    html += `<div class="history-round">
+      <h3>Matchday ${r + 1}</h3>`;
+    results.forEach(res => {
+      html += `<div class="history-match">
+        <span class="${res.winnerIdx === res.homeIdx ? 'hw' : 'hl'}">${res.homeName}</span>
+        vs
+        <span class="${res.winnerIdx === res.awayIdx ? 'hw' : 'hl'}">${res.awayName}</span>
+        · roll ${res.roll} / threshold ${res.threshold}
+        ${res.worstWins ? ' 🎲' : ''}
+        ${!res.stealBlocked ? ' · <span style="color:var(--orange)">±' + fmt(res.stolen) + '</span>' : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════
+initSeason();
+</script>
+</body>
+</html>
