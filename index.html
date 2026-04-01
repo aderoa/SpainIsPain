@@ -213,9 +213,15 @@ let expansionMsg='';
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 function fmt(n){return n.toLocaleString('es-ES')}
+// Global ranking: D1 positions first, then D2 teams interleaved by value
+function globalRanked(){
+  // D1 teams in their ranking order, then D2 teams sorted by value
+  const d2All=[...d2nRankings,...d2sRankings].sort((a,b)=>teams[b].value-teams[a].value);
+  return [...d1Rankings,...d2All];
+}
 function globalRank(tIdx){
-  const s=[...teams.keys()].filter(i=>teams[i].division!=='unassigned').sort((a,b)=>teams[b].value-teams[a].value);
-  return s.indexOf(tIdx)+1;
+  const gr=globalRanked();
+  const p=gr.indexOf(tIdx);return p===-1?999:p+1;
 }
 function divOf(tIdx){return teams[tIdx].division}
 function divRankings(div){return div==='d2n'?d2nRankings:div==='d2s'?d2sRankings:d1Rankings}
@@ -323,7 +329,7 @@ function onCooldown(a,b){
 function generateMatchups(forRound){
   const rnd=forRound||roundNum+1;
   const priority=getRoundPriority(rnd);
-  const allByValue=[...teams.keys()].filter(i=>teams[i].division!=='unassigned').sort((a,b)=>teams[b].value-teams[a].value);
+  const allByRank=globalRanked();
   const paired=new Set();
   const matchups=[];
 
@@ -334,7 +340,7 @@ function generateMatchups(forRound){
   for(const belt of sortedBelts){
     if(belt.holder===null||paired.has(belt.holder))continue;
     let challenger=null;
-    for(const tIdx of allByValue){
+    for(const tIdx of allByRank){
       if(tIdx===belt.holder||paired.has(tIdx))continue;
       if(!isEligibleForBelt(tIdx,belt))continue;
       if(onCooldown(belt.holder,tIdx))continue;
@@ -349,7 +355,7 @@ function generateMatchups(forRound){
   // 2) Unclaimed belts — best 2 eligible
   for(const belt of sortedBelts){
     if(belt.holder!==null)continue;
-    const eligible=allByValue.filter(i=>isEligibleForBelt(i,belt)&&!paired.has(i));
+    const eligible=allByRank.filter(i=>isEligibleForBelt(i,belt)&&!paired.has(i));
     if(eligible.length>=2&&!onCooldown(eligible[0],eligible[1])){
       matchups.push({homeIdx:eligible[0],awayIdx:eligible[1],beltId:belt.id});
       paired.add(eligible[0]);paired.add(eligible[1]);
@@ -357,7 +363,7 @@ function generateMatchups(forRound){
   }
 
   // 3) Remaining by global rank — cross-division OK
-  const unpaired=allByValue.filter(i=>!paired.has(i));
+  const unpaired=allByRank.filter(i=>!paired.has(i));
   const used=new Set();
   for(let i=0;i<unpaired.length;i++){
     if(used.has(unpaired[i]))continue;
@@ -721,14 +727,48 @@ function renderSim(){
 
   const matchups=phase==='idle'&&roundNum===0?generateMatchups(1):curMatchups;
   matchups.forEach((mu,i)=>{
-    h+=renderMatchCard(mu,curResults[i],roundActive&&i===matchCursor);
+    const cardId=`match-${i}`;
+    h+=renderMatchCard(mu,curResults[i],roundActive&&i===matchCursor,cardId);
   });
   if(matchups.length===0)h+=`<p style="color:var(--muted)">No matchups to show.</p>`;
 
+  // Inline group assignment for post_round_promo and assign_groups
+  if(phase==='post_round_promo'||phase==='assign_groups'){
+    h+=renderInlineGroups();
+  }
+
   el.innerHTML=h;
+
+  // Auto-scroll to latest result or current match
+  requestAnimationFrame(()=>{
+    const scrollTarget=roundActive?`match-${matchCursor}`:curResults.length>0?`match-${curResults.length-1}`:null;
+    if(scrollTarget){
+      const target=document.getElementById(scrollTarget);
+      if(target)target.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  });
 }
 
-function renderMatchCard(mu,res,isCur){
+function renderInlineGroups(){
+  const un=teams.map((_,i)=>i).filter(i=>teams[i].division==='unassigned');
+  let h=`<div class="section-title">Assign Teams to D2 Groups</div>`;
+  if(un.length)h+=`<div class="banner banner-blue" style="margin-top:8px">Click to cycle: Unassigned → North → South → Unassigned</div>`;
+  if(un.length){
+    h+=`<div class="unassigned-pool"><h3>Unassigned (${un.length})</h3>`;
+    un.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name} <span style="color:var(--muted);font-size:.72rem">${t.comunidad}</span></span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ North</span></div>`});
+    h+=`</div>`;
+  }
+  h+=`<div class="group-columns"><div class="group-col north"><h3>D2 North (${d2nRankings.length})</h3>`;
+  d2nRankings.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name}</span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ South</span></div>`});
+  if(!d2nRankings.length)h+=`<p style="color:var(--muted);font-size:.8rem">Empty</p>`;
+  h+=`</div><div class="group-col south"><h3>D2 South (${d2sRankings.length})</h3>`;
+  d2sRankings.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name}</span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ Remove</span></div>`});
+  if(!d2sRankings.length)h+=`<p style="color:var(--muted);font-size:.8rem">Empty</p>`;
+  h+=`</div></div>`;
+  return h;
+}
+
+function renderMatchCard(mu,res,isCur,cardId){
   const belt=mu.beltId?belts.find(b=>b.id===mu.beltId):null;
   const bClass=belt?'belt-'+beltCSSLevel(belt):'';
 
@@ -736,7 +776,7 @@ function renderMatchCard(mu,res,isCur){
     const t1w=res.winnerIdx===mu.homeIdx;
     const b1=teamBeltsHTML(mu.homeIdx),b2=teamBeltsHTML(mu.awayIdx);
 
-    return`<div class="match-card played fade-in">
+    return`<div class="match-card played fade-in" id="${cardId}">
       ${belt?`<div class="match-belt-tag"><span class="belt-badge ${bClass}">🏆 ${belt.name} Belt${res.beltNewClaim?' — First Claim':res.beltChanged?' — TITLE CHANGE!':' — Defense'}</span></div>`:''}
       <div class="match-row">
         <div class="match-team"><div>
@@ -766,7 +806,7 @@ function renderMatchCard(mu,res,isCur){
   }
 
   const t1=teams[mu.homeIdx],t2=teams[mu.awayIdx];
-  return`<div class="match-card${isCur?' current':''}">
+  return`<div class="match-card${isCur?' current':''}" id="${cardId}">
     ${belt?`<div class="match-belt-tag"><span class="belt-badge ${bClass}">🏆 ${belt.name} Belt</span></div>`:''}
     <div class="match-row">
       <div class="match-team"><div>
