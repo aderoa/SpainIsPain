@@ -432,12 +432,15 @@ async function checkExpansion(){
   if(!csvData){expansionMsg='⚠️ Could not fetch Google Sheet. Check it\'s published.';phase='idle';renderAll();return}
   const newRows=csvData.filter(row=>!teams.find(t=>t.name===row.name));
   if(newRows.length===0){expansionMsg='No new teams found.';phase='idle';renderAll();return}
-  newRows.forEach(row=>{
+  // Only take the next 4 teams (expansion is always 4)
+  const batch=newRows.slice(0,4);
+  batch.forEach(row=>{
     teams.push({name:row.name,comunidad:row.comunidad,provincia:row.provincia,value:row.value,startValue:row.value,wins:0,losses:0,division:'unassigned'});
   });
   autoCreateBelts();
-  expansionMsg=`📦 ${newRows.length} new: ${newRows.map(r=>r.name).join(', ')}. Assign groups.`;
-  phase='assign_groups';renderAll();
+  const remaining=newRows.length-batch.length;
+  expansionMsg=`📦 ${batch.length} new: ${batch.map(r=>r.name).join(', ')}. Assign groups.${remaining>0?' ('+remaining+' more available next expansion)':''}`;
+  phase='assign_groups';saveState();renderAll();
 }
 
 function assignTeam(tIdx,group){
@@ -449,22 +452,21 @@ function assignTeam(tIdx,group){
   if(group==='d2s'&&!d2sRankings.includes(tIdx)){d2sRankings.push(tIdx);d2sRankings.sort((a,b)=>teams[b].value-teams[a].value)}
   if(d2nRankings.length>=2&&!belts.find(b=>b.id==='d2_north'))belts.push({id:'d2_north',level:'d2',tier:2,name:'D2 North',holder:null,scope:'north',scopeType:'d2',defenses:0,changes:0});
   if(d2sRankings.length>=2&&!belts.find(b=>b.id==='d2_south'))belts.push({id:'d2_south',level:'d2',tier:2,name:'D2 South',holder:null,scope:'south',scopeType:'d2',defenses:0,changes:0});
-  autoCreateBelts();renderAll();
+  autoCreateBelts();saveState();renderAll();
 }
 function cycleTeamGroup(tIdx){
   const d=teams[tIdx].division;
   if(d==='unassigned')assignTeam(tIdx,'d2n');
   else if(d==='d2n'){d2nRankings=d2nRankings.filter(i=>i!==tIdx);assignTeam(tIdx,'d2s')}
-  else if(d==='d2s'){d2sRankings=d2sRankings.filter(i=>i!==tIdx);teams[tIdx].division='unassigned';renderAll()}
+  else if(d==='d2s'){d2sRankings=d2sRankings.filter(i=>i!==tIdx);teams[tIdx].division='unassigned';saveState();renderAll()}
 }
 function finishGroups(){
   if(teams.some(t=>t.division==='unassigned'))return;
-  phase='idle';expansionMsg='';promoRelegMsg='';renderAll();
+  phase='idle';expansionMsg='';promoRelegMsg='';saveState();renderAll();
 }
 function finishPromoGroups(){
   if(teams.some(t=>t.division==='unassigned'))return;
-  // After assigning relegated teams, go to post_round so user can check expansion
-  phase='post_round';promoRelegMsg='';renderAll();
+  phase='post_round';promoRelegMsg='';saveState();renderAll();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -522,6 +524,7 @@ function doPromoReleg(){
   });
 
   promoRelegMsg=msgs.join(' · ');
+  saveState();
   return{promoted,relegated,msgs};
 }
 let promoRelegMsg='';
@@ -532,7 +535,7 @@ let promoRelegMsg='';
 function prepareRound(){
   roundNum++;
   curMatchups=generateMatchups(roundNum);
-  curResults=[];matchCursor=0;roundActive=true;phase='in_round';renderAll();
+  curResults=[];matchCursor=0;roundActive=true;phase='in_round';saveState();renderAll();
 }
 
 function playNext(){
@@ -585,10 +588,53 @@ function playNext(){
       promoRelegMsg='';
     }
   }
-  renderAll();
+  saveState();renderAll();
 }
 
 function simAll(){while(roundActive)playNext()}
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCE — localStorage
+// ═══════════════════════════════════════════════════════════════
+const SAVE_KEY='spain_is_pain_state';
+
+function saveState(){
+  try{
+    const state={
+      teams,d1Rankings,d2nRankings,d2sRankings,belts,
+      roundNum,matchHistory,curMatchups,curResults,matchCursor,
+      allHistory,beltLog,roundActive,promoActive,phase,
+      expansionMsg,promoRelegMsg,
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+  }catch(e){console.warn('Save failed:',e)}
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    const s=JSON.parse(raw);
+    teams=s.teams||[];
+    d1Rankings=s.d1Rankings||[];
+    d2nRankings=s.d2nRankings||[];
+    d2sRankings=s.d2sRankings||[];
+    belts=s.belts||[];
+    roundNum=s.roundNum||0;
+    matchHistory=s.matchHistory||[];
+    curMatchups=s.curMatchups||[];
+    curResults=s.curResults||[];
+    matchCursor=s.matchCursor||0;
+    allHistory=s.allHistory||[];
+    beltLog=s.beltLog||[];
+    roundActive=s.roundActive||false;
+    promoActive=s.promoActive||false;
+    phase=s.phase||'idle';
+    expansionMsg=s.expansionMsg||'';
+    promoRelegMsg=s.promoRelegMsg||'';
+    return true;
+  }catch(e){console.warn('Load failed:',e);return false}
+}
 
 // ═══════════════════════════════════════════════════════════════
 // INIT — always 8 seed teams
@@ -612,6 +658,7 @@ function initSeason(){
   autoCreateBelts();
   roundNum=0;matchHistory=[];curMatchups=[];curResults=[];matchCursor=0;
   allHistory=[];beltLog=[];roundActive=false;promoActive=false;phase='idle';expansionMsg='';promoRelegMsg='';
+  localStorage.removeItem(SAVE_KEY);
   renderAll();
 }
 
@@ -647,16 +694,16 @@ function renderSim(){
     h+=`<button class="btn" onclick="prepareRound()">Prepare Round ${roundNum+1}</button>`;
     if(roundNum>0)h+=`<button class="btn btn-blue btn-sm" onclick="checkExpansion()">Check Expansion</button>`;
     if(d2nRankings.length+d2sRankings.length>0||promoActive){
-      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
+      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;saveState();renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
     }
   }else if(phase==='in_round'){
     h+=`<button class="btn" onclick="playNext()">Play Next Match</button>`;
     h+=`<button class="btn btn-outline btn-sm" onclick="simAll()">Sim All</button>`;
   }else if(phase==='post_round'){
     h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';renderAll()">Next Round</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';saveState();renderAll()">Next Round</button>`;
     if(d2nRankings.length+d2sRankings.length>0&&!promoActive){
-      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
+      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;saveState();renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
     }
   }else if(phase==='post_round_promo'){
     const un=teams.filter(t=>t.division==='unassigned').length;
@@ -664,7 +711,7 @@ function renderSim(){
       h+=`<button class="btn" onclick="showTab('groups')">Assign ${un} relegated team(s) to D2 groups →</button>`;
     }else{
       h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
-      h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';promoRelegMsg='';renderAll()">Next Round</button>`;
+      h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';promoRelegMsg='';saveState();renderAll()">Next Round</button>`;
     }
   }else if(phase==='assign_groups'){
     const un=teams.filter(t=>t.division==='unassigned').length;
@@ -936,7 +983,12 @@ function renderHistory(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-initSeason();
+// BOOT — load saved state or start fresh
+if(loadState()){
+  renderAll();
+}else{
+  initSeason();
+}
 </script>
 </body>
 </html>
