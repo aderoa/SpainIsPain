@@ -473,8 +473,7 @@ function finishPromoGroups(){
 // PROMO/RELEG
 // ═══════════════════════════════════════════════════════════════
 function doPromoReleg(){
-  if(!promoActive)return[];
-  if(d2nRankings.length===0&&d2sRankings.length===0)return[];
+  if(d2nRankings.length===0&&d2sRankings.length===0)return{promoted:[],relegated:[],msgs:[]};
   const msgs=[];
 
   // 1) Promote D2N #1 and D2S #1 into D1
@@ -493,12 +492,6 @@ function doPromoReleg(){
 
   // 2) Relegate D1 bottom 2 → 'unassigned' (user assigns group)
   const relegated=[];
-  while(d1Rankings.length>D1_SIZE||(d1Rankings.length>D1_SIZE-promoted.length+relegated.length)){
-    // Relegate the two worst — but only the original bottom 2 before promotions
-    break; // handled below
-  }
-  // Get current bottom 2 of D1 BEFORE adding promoted (they were already removed from d2)
-  // Actually promoted aren't in d1Rankings yet, so bottom 2 is correct
   if(d1Rankings.length>=2){
     const rel1=d1Rankings[d1Rankings.length-1];
     const rel2=d1Rankings[d1Rankings.length-2];
@@ -513,7 +506,6 @@ function doPromoReleg(){
   // 3) Insert promoted into D1, sorted by value (tie-break)
   promoted.sort((a,b)=>teams[b].value-teams[a].value);
   promoted.forEach(tIdx=>{
-    // Insert at correct position by value
     let inserted=false;
     for(let i=0;i<d1Rankings.length;i++){
       if(teams[tIdx].value>teams[d1Rankings[i]].value){
@@ -579,10 +571,10 @@ function playNext(){
   if(matchCursor>=curMatchups.length){
     roundActive=false;
     allHistory.push({round:roundNum,matches:[...curResults],priority:getRoundPriority(roundNum)});
-    // Auto promo/releg after round completes
-    if(promoActive&&(d2nRankings.length>0||d2sRankings.length>0)){
-      const result=doPromoReleg();
-      phase='post_round_promo'; // show promo results, then user assigns relegated teams + expansion
+    // Auto promo/releg after round completes whenever D2 groups exist
+    if(d2nRankings.length>0||d2sRankings.length>0){
+      doPromoReleg();
+      phase='post_round_promo';
     }else{
       phase='post_round';
       promoRelegMsg='';
@@ -693,18 +685,12 @@ function renderSim(){
   if(phase==='idle'){
     h+=`<button class="btn" onclick="prepareRound()">Prepare Round ${roundNum+1}</button>`;
     if(roundNum>0)h+=`<button class="btn btn-blue btn-sm" onclick="checkExpansion()">Check Expansion</button>`;
-    if(d2nRankings.length+d2sRankings.length>0||promoActive){
-      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;saveState();renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
-    }
   }else if(phase==='in_round'){
     h+=`<button class="btn" onclick="playNext()">Play Next Match</button>`;
     h+=`<button class="btn btn-outline btn-sm" onclick="simAll()">Sim All</button>`;
   }else if(phase==='post_round'){
     h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
     h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';saveState();renderAll()">Next Round</button>`;
-    if(d2nRankings.length+d2sRankings.length>0&&!promoActive){
-      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;saveState();renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
-    }
   }else if(phase==='post_round_promo'){
     const un=teams.filter(t=>t.division==='unassigned').length;
     if(un>0){
