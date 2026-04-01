@@ -821,6 +821,7 @@ function renderMatchCard(mu,res,isCur,cardId){
         <div class="mval">${fmt(t2.value)}</div>
       </div></div>
     </div>
+    ${isCur?'<div style="padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:8px"><button class="btn btn-sm" onclick="playNext()">▶ Play Match</button><button class="btn btn-outline btn-sm" onclick="simAll()">Sim All Remaining</button></div>':''}
   </div>`;
 }
 
