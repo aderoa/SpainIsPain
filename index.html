@@ -459,32 +459,72 @@ function cycleTeamGroup(tIdx){
 }
 function finishGroups(){
   if(teams.some(t=>t.division==='unassigned'))return;
-  phase='idle';expansionMsg='';renderAll();
+  phase='idle';expansionMsg='';promoRelegMsg='';renderAll();
+}
+function finishPromoGroups(){
+  if(teams.some(t=>t.division==='unassigned'))return;
+  // After assigning relegated teams, go to post_round so user can check expansion
+  phase='post_round';promoRelegMsg='';renderAll();
 }
 
 // ═══════════════════════════════════════════════════════════════
 // PROMO/RELEG
 // ═══════════════════════════════════════════════════════════════
 function doPromoReleg(){
-  if(!promoActive)return;
+  if(!promoActive)return[];
+  if(d2nRankings.length===0&&d2sRankings.length===0)return[];
   const msgs=[];
-  if(d1Rankings.length>=D1_SIZE){
-    [d1Rankings[d1Rankings.length-1],d1Rankings[d1Rankings.length-2]].forEach(tIdx=>{
-      d1Rankings=d1Rankings.filter(i=>i!==tIdx);
-      teams[tIdx].division='unassigned';
-      msgs.push(`▼ ${teams[tIdx].name} relegated`);
-    });
-  }
-  [d2nRankings[0],d2sRankings[0]].forEach(tIdx=>{
-    if(tIdx===undefined)return;
+
+  // 1) Promote D2N #1 and D2S #1 into D1
+  const promoted=[];
+  const promoN=d2nRankings.length>0?d2nRankings[0]:null;
+  const promoS=d2sRankings.length>0?d2sRankings[0]:null;
+  [promoN,promoS].forEach(tIdx=>{
+    if(tIdx===null)return;
     const pd=teams[tIdx].division;
     if(pd==='d2n')d2nRankings=d2nRankings.filter(i=>i!==tIdx);
     if(pd==='d2s')d2sRankings=d2sRankings.filter(i=>i!==tIdx);
-    teams[tIdx].division='d1';d1Rankings.push(tIdx);
-    msgs.push(`▲ ${teams[tIdx].name} promoted`);
+    teams[tIdx].division='d1';
+    promoted.push(tIdx);
+    msgs.push(`▲ ${teams[tIdx].name} promoted to D1`);
   });
-  expansionMsg=msgs.join(' · ');renderAll();
+
+  // 2) Relegate D1 bottom 2 → 'unassigned' (user assigns group)
+  const relegated=[];
+  while(d1Rankings.length>D1_SIZE||(d1Rankings.length>D1_SIZE-promoted.length+relegated.length)){
+    // Relegate the two worst — but only the original bottom 2 before promotions
+    break; // handled below
+  }
+  // Get current bottom 2 of D1 BEFORE adding promoted (they were already removed from d2)
+  // Actually promoted aren't in d1Rankings yet, so bottom 2 is correct
+  if(d1Rankings.length>=2){
+    const rel1=d1Rankings[d1Rankings.length-1];
+    const rel2=d1Rankings[d1Rankings.length-2];
+    [rel2,rel1].forEach(tIdx=>{
+      d1Rankings=d1Rankings.filter(i=>i!==tIdx);
+      teams[tIdx].division='unassigned';
+      relegated.push(tIdx);
+      msgs.push(`▼ ${teams[tIdx].name} relegated from D1`);
+    });
+  }
+
+  // 3) Insert promoted into D1, sorted by value (tie-break)
+  promoted.sort((a,b)=>teams[b].value-teams[a].value);
+  promoted.forEach(tIdx=>{
+    // Insert at correct position by value
+    let inserted=false;
+    for(let i=0;i<d1Rankings.length;i++){
+      if(teams[tIdx].value>teams[d1Rankings[i]].value){
+        d1Rankings.splice(i,0,tIdx);inserted=true;break;
+      }
+    }
+    if(!inserted)d1Rankings.push(tIdx);
+  });
+
+  promoRelegMsg=msgs.join(' · ');
+  return{promoted,relegated,msgs};
 }
+let promoRelegMsg='';
 
 // ═══════════════════════════════════════════════════════════════
 // ROUND FLOW
@@ -534,8 +574,16 @@ function playNext(){
   curResults.push(res);matchCursor++;
 
   if(matchCursor>=curMatchups.length){
-    roundActive=false;phase='post_round';
+    roundActive=false;
     allHistory.push({round:roundNum,matches:[...curResults],priority:getRoundPriority(roundNum)});
+    // Auto promo/releg after round completes
+    if(promoActive&&(d2nRankings.length>0||d2sRankings.length>0)){
+      const result=doPromoReleg();
+      phase='post_round_promo'; // show promo results, then user assigns relegated teams + expansion
+    }else{
+      phase='post_round';
+      promoRelegMsg='';
+    }
   }
   renderAll();
 }
@@ -563,7 +611,7 @@ function initSeason(){
   belts=[{id:'national_spain',level:'national',tier:1,name:'Spain 🇪🇸',holder:null,scope:'spain',scopeType:'national',defenses:0,changes:0}];
   autoCreateBelts();
   roundNum=0;matchHistory=[];curMatchups=[];curResults=[];matchCursor=0;
-  allHistory=[];beltLog=[];roundActive=false;promoActive=false;phase='idle';expansionMsg='';
+  allHistory=[];beltLog=[];roundActive=false;promoActive=false;phase='idle';expansionMsg='';promoRelegMsg='';
   renderAll();
 }
 
@@ -598,9 +646,8 @@ function renderSim(){
   if(phase==='idle'){
     h+=`<button class="btn" onclick="prepareRound()">Prepare Round ${roundNum+1}</button>`;
     if(roundNum>0)h+=`<button class="btn btn-blue btn-sm" onclick="checkExpansion()">Check Expansion</button>`;
-    if(d2nRankings.length+d2sRankings.length>0){
+    if(d2nRankings.length+d2sRankings.length>0||promoActive){
       h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
-      if(promoActive)h+=`<button class="btn btn-outline btn-sm" onclick="doPromoReleg()">Apply Now</button>`;
     }
   }else if(phase==='in_round'){
     h+=`<button class="btn" onclick="playNext()">Play Next Match</button>`;
@@ -608,6 +655,17 @@ function renderSim(){
   }else if(phase==='post_round'){
     h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
     h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';renderAll()">Next Round</button>`;
+    if(d2nRankings.length+d2sRankings.length>0&&!promoActive){
+      h+=`<button class="btn btn-outline btn-sm" onclick="promoActive=!promoActive;renderAll()">${promoActive?'🟢':'⚪'} Promo/Releg</button>`;
+    }
+  }else if(phase==='post_round_promo'){
+    const un=teams.filter(t=>t.division==='unassigned').length;
+    if(un>0){
+      h+=`<button class="btn" onclick="showTab('groups')">Assign ${un} relegated team(s) to D2 groups →</button>`;
+    }else{
+      h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
+      h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';promoRelegMsg='';renderAll()">Next Round</button>`;
+    }
   }else if(phase==='assign_groups'){
     const un=teams.filter(t=>t.division==='unassigned').length;
     h+=`<button class="btn" onclick="finishGroups()" ${un?'disabled':''}>Confirm Groups${un?' ('+un+' left)':''}</button>`;
@@ -616,6 +674,7 @@ function renderSim(){
   h+=`</div>`;
 
   if(phase==='assign_groups')h+=`<div class="banner banner-gold">Go to <b>D2 Groups</b> tab to assign new teams.</div>`;
+  if(phase==='post_round_promo'&&promoRelegMsg)h+=`<div class="banner banner-gold">${promoRelegMsg}${teams.some(t=>t.division==='unassigned')?' — Assign relegated teams in <b>D2 Groups</b> tab.':''}</div>`;
 
   // Priority display
   const nextRnd=roundActive?roundNum:roundNum+1;
@@ -775,6 +834,14 @@ function renderGroups(){
   const el=document.getElementById('tab-groups');
   const un=teams.map((_,i)=>i).filter(i=>teams[i].division==='unassigned');
   let h='';
+
+  // Show confirm button at top if in assignment phase
+  if(phase==='post_round_promo'||phase==='assign_groups'){
+    const canConfirm=un.length===0;
+    const action=phase==='post_round_promo'?'finishPromoGroups()':'finishGroups()';
+    h+=`<div class="controls"><button class="btn" onclick="${action}" ${canConfirm?'':'disabled'}>Confirm Groups${un.length?' ('+un.length+' left)':''}</button></div>`;
+  }
+
   if(un.length)h+=`<div class="banner banner-blue">Click to cycle: Unassigned → North → South → Unassigned</div>`;
   if(un.length){
     h+=`<div class="unassigned-pool"><h3>Unassigned (${un.length})</h3>`;
@@ -797,23 +864,50 @@ function renderGroups(){
 function renderBeltLog(){
   const el=document.getElementById('tab-beltlog');
   if(!beltLog.length){el.innerHTML=`<p style="color:var(--muted);text-align:center;padding:40px">No belt matches yet.</p>`;return}
-  let h=`<div class="section-title">All Belt Matches (${beltLog.length})</div>`;
-  const reversed=[...beltLog].reverse();
-  reversed.forEach(entry=>{
-    const bClass='belt-'+entry.beltLevel;
-    let icon,cls,desc;
-    if(entry.newClaim){
-      icon='🏆';cls='blog-new';
-      desc=`<b>${entry.winner}</b> claims <span class="belt-badge ${bClass}" style="font-size:.55rem;padding:1px 5px">${entry.beltName}</span> (${entry.team1} vs ${entry.team2})`;
-    }else if(entry.changed){
-      icon='🔄';cls='blog-changed';
-      desc=`<b>${entry.winner}</b> takes <span class="belt-badge ${bClass}" style="font-size:.55rem;padding:1px 5px">${entry.beltName}</span> from ${entry.defender} (${entry.team1} vs ${entry.team2})`;
-    }else{
-      icon='🛡️';cls='blog-defended';
-      desc=`<b>${entry.defender}</b> defends <span class="belt-badge ${bClass}" style="font-size:.55rem;padding:1px 5px">${entry.beltName}</span> vs ${entry.challenger} (${entry.team1} vs ${entry.team2})`;
-    }
-    h+=`<div class="blog-entry"><div class="blog-round">R${entry.round}</div><div class="blog-detail ${cls}">${icon} ${desc}</div></div>`;
+
+  // Group by belt
+  const byBelt={};
+  beltLog.forEach(entry=>{
+    if(!byBelt[entry.beltId])byBelt[entry.beltId]={name:entry.beltName,level:entry.beltLevel,entries:[]};
+    byBelt[entry.beltId].entries.push(entry);
   });
+
+  // Sort belt groups: national first, then regional, then provincial
+  const levelOrder={national:0,d2:1,regional:2,provincial:3};
+  const sortedBeltIds=Object.keys(byBelt).sort((a,b)=>(levelOrder[byBelt[a].level]||9)-(levelOrder[byBelt[b].level]||9));
+
+  let h=`<div style="font-size:.82rem;color:var(--muted);margin-bottom:16px">${beltLog.length} belt matches total across ${sortedBeltIds.length} belts</div>`;
+
+  sortedBeltIds.forEach(bId=>{
+    const group=byBelt[bId];
+    const bClass='belt-'+beltCSSLevel({level:group.level});
+    const defenses=group.entries.filter(e=>!e.changed&&!e.newClaim).length;
+    const changes=group.entries.filter(e=>e.changed).length;
+    const claims=group.entries.filter(e=>e.newClaim).length;
+
+    h+=`<div style="margin-bottom:24px">`;
+    h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+      <span class="belt-badge ${bClass}">🏆 ${group.name}</span>
+      <span style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">${group.entries.length} matches · ${defenses} defenses · ${changes} changes${claims?' · '+claims+' claims':''}</span>
+    </div>`;
+
+    group.entries.forEach(entry=>{
+      let icon,cls,desc;
+      if(entry.newClaim){
+        icon='🏆';cls='blog-new';
+        desc=`<b>${entry.winner}</b> claims belt (${entry.team1} vs ${entry.team2})`;
+      }else if(entry.changed){
+        icon='🔄';cls='blog-changed';
+        desc=`<b>${entry.winner}</b> takes from ${entry.defender} (${entry.team1} vs ${entry.team2})`;
+      }else{
+        icon='🛡️';cls='blog-defended';
+        desc=`<b>${entry.defender}</b> defends vs ${entry.challenger} (${entry.team1} vs ${entry.team2})`;
+      }
+      h+=`<div class="blog-entry"><div class="blog-round">R${entry.round}</div><div class="blog-detail ${cls}">${icon} ${desc}</div></div>`;
+    });
+    h+=`</div>`;
+  });
+
   el.innerHTML=h;
 }
 
