@@ -323,16 +323,37 @@ function buildCalendar(){
 // TEAM SELECTION
 // ═══════════════════════════════════════════════════════════════
 function getRanked(){return allTeams.map((_,i)=>i).sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value)}
-function initStats(i){if(!stats[i])stats[i]={played:0,wins:0,losses:0,tp:0,busy:0}}
+function initStats(i){if(!stats[i])stats[i]={played:0,wins:0,losses:0,tp:0}}
+
+// Check if team is in any active (incomplete) tournament
+function isTeamBusy(tIdx){
+  return tournaments.some(t=>!t.complete&&t.teams&&t.teams.includes(tIdx));
+}
+
+// Find the latest day a team is/was committed to (for cooling check)
+// Checks both active AND recently completed tournaments
+function teamBusyUntil(tIdx){
+  let latest=0;
+  tournaments.forEach(t=>{
+    if(t.teams&&t.teams.includes(tIdx)){
+      const endDay=t.startDay+t.days-1;
+      if(endDay>latest)latest=endDay;
+    }
+  });
+  return latest;
+}
 
 function selectTeams(t){
   const host=allTeams[t.hostIdx];
   const ranked=getRanked();
   const n=t.teamCount;
-  const avail=i=>{initStats(i);return stats[i].busy<t.startDay&&!isHostFrozen(i,t.startDay)};
-  const availTop12=i=>{initStats(i);return stats[i].busy<=t.startDay-COOL&&!isHostFrozen(i,t.startDay)};
+  // Available = not in any active tournament AND not host-frozen
+  const avail=i=>{initStats(i);return !isTeamBusy(i)&&!isHostFrozen(i,t.startDay)};
+  // For top-12: also must have been free for COOL days before
+  const availTop12=i=>{initStats(i);if(isTeamBusy(i)||isHostFrozen(i,t.startDay))return false;const bu=teamBusyUntil(i);return bu===0||bu<=t.startDay-COOL};
   const fn=isTop12(t)?availTop12:avail;
-  const sel=new Set([t.hostIdx]);
+  // Host must not be in another active tournament
+  const sel=new Set(avail(t.hostIdx)?[t.hostIdx]:[]);
 
   if(t.label==='Grand Slam'){
     for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
@@ -369,7 +390,7 @@ function selectTeams(t){
   }
 
   const arr=[...sel].sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
-  arr.forEach(i=>{initStats(i);stats[i].busy=t.startDay+t.days-1;stats[i].tp++});
+  arr.forEach(i=>{initStats(i);stats[i].tp++});
   // Store seed map: teamIdx → seed number (1-indexed, 0 = unseeded)
   const halfSeeds=Math.floor(n/2);
   t.seedMap={};
@@ -532,7 +553,7 @@ function playNextInQueue(){
     if(roundMatches.every(x=>x.result)){
       t.winner=roundMatches[0].result.winI;t.runnerUp=roundMatches[0].result.losI;t.complete=true;
       awardPoints(t);
-      t.teams.forEach(i=>{initStats(i);stats[i].busy=0});
+      // teams freed automatically when t.complete=true;
       q.winMsg=`🏆 ${allTeams[t.winner].name} wins the ${t.label}!`;
       // Record in palmares
       palmares.push({
