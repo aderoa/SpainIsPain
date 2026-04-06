@@ -86,6 +86,22 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease both}
+
+/* Team Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;overflow-y:auto;padding:20px}
+.modal-overlay.open{display:flex;align-items:flex-start;justify-content:center}
+.modal-box{background:var(--bg);border:1px solid var(--border);border-radius:12px;max-width:640px;width:100%;margin:40px auto;padding:0;overflow:hidden}
+.modal-head{background:linear-gradient(135deg,var(--surface2),var(--surface));padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-size:1.2rem;font-weight:800}
+.modal-close{background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;padding:4px 8px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 24px}
+.medal-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(58,50,40,.25);font-size:.82rem}
+.medal-icon{font-size:1rem;width:24px;text-align:center}
+.medal-tourn{font-weight:600}
+.medal-host{color:var(--muted);font-size:.72rem}
+.team-link{cursor:pointer;text-decoration:none;border-bottom:1px dotted rgba(212,168,67,.3)}
+.team-link:hover{border-bottom-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -113,6 +129,9 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 <div id="tab-tournaments" class="tab"></div>
 <div id="tab-teams" class="tab"></div>
 <div id="tab-history" class="tab"></div>
+<div id="team-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box"><div class="modal-head"><h2 id="modal-title"></h2><button class="modal-close" onclick="closeModal()">×</button></div><div class="modal-body" id="modal-body"></div></div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -647,12 +666,12 @@ function renderSeason(){
           h+=`<div class="match-card played-m fade-in" id="mq-${q.qIdx}">
             <div class="match-row">
               <div class="match-team"><div>
-                <div class="mname">${seed1}${regBadge(t1.comunidad)}${r.n1} ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
+                <div class="mname">${seed1}${regBadge(t1.comunidad)}<span class="team-link" onclick="showTeamPalmares(${q.t1})">${r.n1}</span> ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
                 <div class="mval">${fmt(t1.value)}</div>
               </div></div>
               <div class="match-vs">${q.roundName}</div>
               <div class="match-team right"><div>
-                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}${r.n2}${regBadge(t2.comunidad)}${seed2}</div>
+                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}<span class="team-link" onclick="showTeamPalmares(${q.t2})">${r.n2}</span>${regBadge(t2.comunidad)}${seed2}</div>
                 <div class="mval">${fmt(t2.value)}</div>
               </div></div>
             </div>
@@ -671,12 +690,12 @@ function renderSeason(){
             <div style="padding:6px 16px 0">${h2hStr}</div>
             <div class="match-row">
               <div class="match-team"><div>
-                <div class="mname">${seed1}${regBadge(t1.comunidad)}${t1.name}</div>
+                <div class="mname">${seed1}${regBadge(t1.comunidad)}<span class="team-link" onclick="showTeamPalmares(${q.t1})">${t1.name}</span></div>
                 <div class="mval">${fmt(t1.value)}</div>
               </div></div>
               <div class="match-vs">${isCur?'<span style="color:var(--gold)">NEXT</span>':q.roundName}</div>
               <div class="match-team right"><div>
-                <div class="mname">${t2.name}${regBadge(t2.comunidad)}${seed2}</div>
+                <div class="mname"><span class="team-link" onclick="showTeamPalmares(${q.t2})">${t2.name}</span>${regBadge(t2.comunidad)}${seed2}</div>
                 <div class="mval">${fmt(t2.value)}</div>
               </div></div>
             </div>
@@ -737,7 +756,7 @@ function renderRankings(){
   h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Region</th><th>Value</th><th>Pts</th><th>W</th><th>L</th><th>T</th></tr></thead><tbody>`;
   ranked.forEach((i,r)=>{
     const t=allTeams[i],s=stats[i]||{};
-    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad)}${t.name}</td>
+    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600;cursor:pointer" onclick="showTeamPalmares(${i})">${regBadge(t.comunidad)}${t.name}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
       <td class="val">${fmt(t.value)}</td>
       <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
@@ -874,7 +893,7 @@ function renderTeamsTab(){
   sorted.slice(0,100).forEach((i,r)=>{
     const t=allTeams[i],d=t.value-t.startValue;
     const tier=getTier(i+1);
-    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad)}${t.name}</td>
+    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600;cursor:pointer" onclick="showTeamPalmares(${i})">${regBadge(t.comunidad)}${t.name}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.provincia}</td>
       <td class="val">${fmt(t.value)}</td>
@@ -934,6 +953,119 @@ function renderHistory(){
   h+=`</tbody></table>`;
 
   el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEAM PALMARES MODAL
+// ═══════════════════════════════════════════════════════════════
+function showTeamPalmares(tIdx){
+  const t=allTeams[tIdx];
+  const s=stats[tIdx]||{};
+  const ranked=getRanked();
+  const rank=ranked.indexOf(tIdx)+1;
+  const tier=getTier(tIdx+1);
+
+  document.getElementById('modal-title').innerHTML=`${regBadge(t.comunidad)}${t.name}`;
+
+  let h='';
+  // Header info
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div style="background:var(--surface);border-radius:8px;padding:12px">
+      <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Ranking</div>
+      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--gold)">#${rank}</div>
+      <div style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">${pts[tIdx]||0} pts</div>
+    </div>
+    <div style="background:var(--surface);border-radius:8px;padding:12px">
+      <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Value</div>
+      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--gold)">${fmt(t.value)}</div>
+      <div style="font-family:var(--mono);font-size:.75rem;color:${t.value>=t.startValue?'var(--green)':'var(--red-bright)'}">${t.value>=t.startValue?'+':''}${fmt(t.value-t.startValue)}</div>
+    </div>
+  </div>`;
+
+  h+=`<div style="display:flex;gap:16px;margin-bottom:16px;font-size:.82rem">
+    <span>${t.comunidad} · ${t.provincia}</span>
+    <span class="tier-badge ${tier.css}">${tier.label} host</span>
+  </div>`;
+
+  // Stats
+  h+=`<div style="display:flex;gap:20px;margin-bottom:18px;font-family:var(--mono);font-size:.8rem">
+    <span style="color:var(--green)">${s.wins||0}W</span>
+    <span style="color:var(--red-bright)">${s.losses||0}L</span>
+    <span style="color:var(--muted)">${s.tp||0} tournaments</span>
+  </div>`;
+
+  // Medals from palmares
+  const golds=palmares.filter(p=>p.winnerName===t.name);
+  const silvers=palmares.filter(p=>p.runnerUpName===t.name);
+  const bronzes=palmares.filter(p=>p.thirdName===t.name);
+
+  if(golds.length+silvers.length+bronzes.length>0){
+    h+=`<div style="display:flex;gap:16px;margin-bottom:16px;font-size:.9rem;font-weight:700">
+      ${golds.length?'<span style="color:var(--gold)">🥇 '+golds.length+'</span>':''}
+      ${silvers.length?'<span style="color:var(--muted)">🥈 '+silvers.length+'</span>':''}
+      ${bronzes.length?'<span style="color:#cd7f32">🥉 '+bronzes.length+'</span>':''}
+    </div>`;
+
+    // Gold medals
+    if(golds.length){
+      h+=`<div style="font-size:.68rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin:12px 0 6px;font-weight:700">🥇 Gold Medals (${golds.length})</div>`;
+      golds.forEach(p=>{
+        h+=`<div class="medal-row"><span class="medal-icon">🥇</span><span><span class="medal-tourn">${p.hostName}</span> <span class="tier-badge ${p.css}" style="font-size:.5rem;padding:1px 4px">${p.label}</span><br><span class="medal-host">Year ${p.year}</span></span></div>`;
+      });
+    }
+    // Silver
+    if(silvers.length){
+      h+=`<div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:12px 0 6px;font-weight:700">🥈 Silver Medals (${silvers.length})</div>`;
+      silvers.forEach(p=>{
+        h+=`<div class="medal-row"><span class="medal-icon">🥈</span><span><span class="medal-tourn">${p.hostName}</span> <span class="tier-badge ${p.css}" style="font-size:.5rem;padding:1px 4px">${p.label}</span><br><span class="medal-host">Year ${p.year}</span></span></div>`;
+      });
+    }
+    // Bronze
+    if(bronzes.length){
+      h+=`<div style="font-size:.68rem;color:#cd7f32;text-transform:uppercase;letter-spacing:1.5px;margin:12px 0 6px;font-weight:700">🥉 Bronze Medals (${bronzes.length})</div>`;
+      bronzes.forEach(p=>{
+        h+=`<div class="medal-row"><span class="medal-icon">🥉</span><span><span class="medal-tourn">${p.hostName}</span> <span class="tier-badge ${p.css}" style="font-size:.5rem;padding:1px 4px">${p.label}</span><br><span class="medal-host">Year ${p.year}</span></span></div>`;
+      });
+    }
+  }else{
+    h+=`<div style="color:var(--muted);font-size:.82rem;padding:12px 0">No medals yet this season.</div>`;
+  }
+
+  // Head-to-head records (top rivals)
+  const rivals=[];
+  Object.entries(h2h).forEach(([key,rec])=>{
+    const[a,b]=key.split('-').map(Number);
+    if(a===tIdx||b===tIdx){
+      const opp=a===tIdx?b:a;
+      const myWins=a===tIdx?rec[0]:rec[1];
+      const theirWins=a===tIdx?rec[1]:rec[0];
+      rivals.push({opp,myWins,theirWins,total:myWins+theirWins});
+    }
+  });
+  rivals.sort((a,b)=>b.total-a.total);
+
+  if(rivals.length){
+    h+=`<div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:16px 0 8px;font-weight:700">Head-to-Head (${rivals.length} opponents)</div>`;
+    h+=`<table class="tbl"><thead><tr><th>Opponent</th><th>W</th><th>L</th><th>Total</th></tr></thead><tbody>`;
+    rivals.slice(0,20).forEach(r=>{
+      const o=allTeams[r.opp];
+      h+=`<tr><td style="font-weight:600;cursor:pointer" onclick="showTeamPalmares(${r.opp})">${regBadge(o.comunidad)}${o.name}</td>
+        <td class="mono" style="color:var(--green)">${r.myWins}</td>
+        <td class="mono" style="color:var(--red-bright)">${r.theirWins}</td>
+        <td class="mono" style="color:var(--muted)">${r.total}</td></tr>`;
+    });
+    h+=`</tbody></table>`;
+  }
+
+  document.getElementById('modal-body').innerHTML=h;
+  document.getElementById('team-modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('team-modal').classList.remove('open')}
+
+// Make team names clickable — helper that wraps name in a link
+function teamLink(tIdx,name){
+  return`<span class="team-link" onclick="showTeamPalmares(${tIdx})">${name}</span>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
