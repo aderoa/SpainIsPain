@@ -458,8 +458,8 @@ function getAlive(t){
 function buildDayQueue(){
   dayQueue=[];queuePos=0;
   const todayIds=(calendar[currentDay]||[]);
-  // Sort tournaments by startDay (consistent order)
-  const sortedTids=[...todayIds].sort((a,b)=>tournaments[a].startDay-tournaments[b].startDay||a-b);
+  // Sort by tier importance (hostIdx = rank, lower = more important) to match display order
+  const sortedTids=[...todayIds].sort((a,b)=>tournaments[a].hostIdx-tournaments[b].hostIdx);
 
   sortedTids.forEach(tid=>{
     const t=tournaments[tid];
@@ -618,10 +618,10 @@ function renderSeason(){
     h+=`<div class="day-nav"><h2>${dayToDate(currentDay)}</h2><span class="day-badge">Day ${currentDay} · ${dayQueue.length} matches</span></div>`;
 
     // Group matches by tournament
-    const byTourn={};
-    dayQueue.forEach((q,i)=>{if(!byTourn[q.tid])byTourn[q.tid]=[];byTourn[q.tid].push({...q,qIdx:i})});
+    const byTourn=new Map();
+    dayQueue.forEach((q,i)=>{if(!byTourn.has(q.tid))byTourn.set(q.tid,[]);byTourn.get(q.tid).push({...q,qIdx:i})});
 
-    for(const[tid,matches]of Object.entries(byTourn)){
+    for(const[tid,matches]of byTourn){
       const t=tournaments[tid];
       const host=allTeams[t.hostIdx];
       const thCls=t.label==='Grand Slam'?'th-gs':t.label==='Level 2'?'th-l2':'th-lo';
