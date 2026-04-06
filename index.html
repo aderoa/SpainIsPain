@@ -230,63 +230,66 @@ function parseCSV(text){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CALENDAR — even distribution Jan 1 through Dec 31
+// CALENDAR — random placement like CycleSim
 // ═══════════════════════════════════════════════════════════════
 function buildCalendar(){
   calendar=Array.from({length:DAYS+1},()=>[]);
   const dayLoad=new Array(DAYS+1).fill(0);
 
-  // 1) Top 12: evenly spaced, no overlap with each other, starting Jan 1
-  const top12=tournaments.filter(t=>isTop12(t));
-  const gs=top12.filter(t=>t.label==='Grand Slam');
-  const l2=top12.filter(t=>t.label==='Level 2');
-  const ordered=[];
-  let gi=0,li=0;
-  for(let i=0;i<12;i++){
-    if(i%3===0&&gi<gs.length)ordered.push(gs[gi++]);
-    else if(li<l2.length)ordered.push(l2[li++]);
-    else if(gi<gs.length)ordered.push(gs[gi++]);
-  }
-  // Space them: first starts day 1, last one must end by day 365
-  const totalTop12Days=ordered.reduce((s,t)=>s+t.days,0); // 12*5=60
-  const gapBetween=Math.floor((DAYS-totalTop12Days)/(ordered.length-1));
-  let nd=1;
-  ordered.forEach(t=>{
-    t.startDay=nd;
-    for(let d=0;d<t.days;d++){calendar[nd+d].push(t.id);dayLoad[nd+d]++}
-    nd+=t.days+gapBetween;
+  // 1) Top 12: shuffle randomly, place one by one ensuring no overlap
+  const top12=[...tournaments.filter(t=>isTop12(t))];
+  // Shuffle top 12 completely
+  for(let i=top12.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[top12[i],top12[j]]=[top12[j],top12[i]]}
+
+  const top12Windows=[]; // [{start,end}]
+
+  top12.forEach(t=>{
+    // Collect all valid start days (no overlap with other top12)
+    const valid=[];
+    for(let d=1;d<=DAYS-t.days+1;d++){
+      let ok=true;
+      for(const w of top12Windows){
+        // Must not overlap at all
+        if(d<=w.end&&d+t.days-1>=w.start){ok=false;break}
+      }
+      if(ok)valid.push(d);
+    }
+    // Pick a random valid day
+    const startDay=valid[Math.floor(Math.random()*valid.length)]||1;
+    t.startDay=startDay;
+    for(let d=0;d<t.days;d++){calendar[startDay+d].push(t.id);dayLoad[startDay+d]++}
+    top12Windows.push({start:startDay,end:startDay+t.days-1});
   });
 
-  // Top 12 running days (only these are blocked for OTHER top 12, not for lower tournaments)
+  // Top 12 running days for penalty
   const top12Days=new Set();
-  ordered.forEach(t=>{for(let d=t.startDay;d<t.startDay+t.days;d++)top12Days.add(d)});
+  top12Windows.forEach(w=>{for(let d=w.start;d<=w.end;d++)top12Days.add(d)});
 
-  // 2) All other tournaments: greedy lowest-load, avoid same-province overlap
-  const rest=tournaments.filter(t=>!isTop12(t));
+  // 2) All other tournaments: random placement with soft constraints
+  const rest=[...tournaments.filter(t=>!isTop12(t))];
+  // Full shuffle
   for(let i=rest.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]]}
 
-  const provWindows={};
+  const provWindows={}; // {prov: [{start,end}]}
 
   rest.forEach(t=>{
     const prov=allTeams[t.hostIdx].provincia;
     const dur=t.days;
-    let bestDay=1,bestScore=Infinity;
 
+    let bestDay=1,bestScore=Infinity;
     for(let d=1;d<=DAYS-dur+1;d++){
       let score=0;
       for(let dd=0;dd<dur;dd++){
-        score+=dayLoad[d+dd]*3;
-        // Heavy penalty for overlapping with top 12 days
-        if(top12Days.has(d+dd))score+=5000;
+        score+=dayLoad[d+dd]*4;
+        if(top12Days.has(d+dd))score+=3000;
       }
-
-      // Penalize same-province nearby
       const pw=provWindows[prov]||[];
       for(const w of pw){
-        if(d<=w.end+3&&d+dur-1>=w.start-3)score+=500;
-        if(d<=w.end&&d+dur-1>=w.start)score+=2000;
+        if(d<=w.end+2&&d+dur-1>=w.start-2)score+=800;
+        if(d<=w.end&&d+dur-1>=w.start)score+=3000;
       }
-
+      // Random jitter so ties scatter naturally
+      score+=Math.random()*8;
       if(score<bestScore){bestScore=score;bestDay=d}
     }
 
