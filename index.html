@@ -230,6 +230,17 @@ let daySimmed=false;
 let h2h={};         // {"min-max": [minWins, maxWins]} where min/max are sorted team indices
 let palmares=[];    // [{year,tournId,label,css,hostName,hostCom,winnerName,winnerCom,runnerUpName,thirdName}]
 let seasonYear=1;
+let pendingExpansion=false; // true when waiting for expansion
+let expansionMsg='';
+
+// Expansion days: 15th and last day of each month
+function getExpansionDays(){
+  const days=[];let dayOff=0;
+  MONTH_DAYS.forEach(md=>{days.push(dayOff+15);days.push(dayOff+md);dayOff+=md});
+  return days;
+}
+const EXPANSION_DAYS=getExpansionDays();
+const EXPANSION_SIZE=10;
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -572,11 +583,96 @@ function playNextInQueue(){
 
 function simRestOfDay(){while(queuePos<dayQueue.length)playNextInQueue()}
 
+// ═══════════════════════════════════════════════════════════════
+// EXPANSION — twice a month (15th + last day)
+// ═══════════════════════════════════════════════════════════════
+async function checkExpansion(){
+  expansionMsg='Fetching teams...';renderAll();
+  try{
+    const r=await fetch(CSV_URL);const text=await r.text();
+    const data=parseCSV(text);
+    if(!data){expansionMsg='⚠️ Could not fetch sheet.';renderAll();return}
+
+    // Find teams not yet in allTeams
+    const newRows=data.filter(row=>!allTeams.find(t=>t.name===row.name));
+    if(newRows.length===0){
+      expansionMsg='No new teams in the sheet. Add '+EXPANSION_SIZE+' teams and try again.';
+      renderAll();return;
+    }
+
+    // Take up to EXPANSION_SIZE
+    const batch=newRows.slice(0,EXPANSION_SIZE);
+    const minTP=Math.min(...Object.values(stats).map(s=>s.tp||0).filter(x=>x>0),999);
+    const effectiveMinTP=minTP===999?0:minTP;
+
+    batch.forEach(row=>{
+      const idx=allTeams.length;
+      allTeams.push({...row,startValue:row.value});
+
+      // Init stats with minimum tournaments played
+      initStats(idx);
+      stats[idx].tp=effectiveMinTP;
+
+      // Create tournament for this team
+      const tier=getTier(idx+1);
+      const tourn={id:tournaments.length,hostIdx:idx,label:tier.label,css:tier.css,
+        teamCount:tier.teamCount,days:tier.days,startDay:0,
+        teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false};
+      tournaments.push(tourn);
+
+      // Schedule: find best day in remaining season
+      const dur=tourn.days;
+      const prov=row.provincia;
+      let bestDay=currentDay+1,bestScore=Infinity;
+      for(let d=currentDay+1;d<=DAYS-dur+1;d++){
+        let score=Math.random()*200;
+        for(let dd=0;dd<dur;dd++){
+          score+=(calendar[d+dd]?.length||0)*15;
+        }
+        // Same-province penalty
+        for(let dd=0;dd<dur;dd++){
+          const dayTourns=calendar[d+dd]||[];
+          if(dayTourns.some(tid=>allTeams[tournaments[tid]?.hostIdx]?.provincia===prov))score+=800;
+        }
+        if(score<bestScore){bestScore=score;bestDay=d}
+      }
+      tourn.startDay=bestDay;
+      for(let d=0;d<dur;d++){
+        if(!calendar[bestDay+d])calendar[bestDay+d]=[];
+        calendar[bestDay+d].push(tourn.id);
+      }
+    });
+
+    const remaining=newRows.length-batch.length;
+    expansionMsg=`📦 ${batch.length} new teams added: ${batch.map(r=>r.name).join(', ')}. Min TP set to ${effectiveMinTP}.${remaining>0?' ('+remaining+' more available next expansion)':''}`;
+    pendingExpansion=false;
+    buildDayQueue(); // Build queue for this expansion day
+    saveState();renderAll();
+  }catch(e){
+    expansionMsg='⚠️ Fetch failed: '+e.message;
+    renderAll();
+  }
+}
+
+function skipExpansion(){
+  pendingExpansion=false;expansionMsg='';
+  buildDayQueue();saveState();renderAll();
+}
+
 function advanceDay(){
-  if(seasonDone)return;
-  
+  if(seasonDone||pendingExpansion)return;
+
   currentDay++;
   if(currentDay>DAYS){seasonDone=true;saveState();renderAll();return}
+
+  // Check if this is an expansion day
+  if(EXPANSION_DAYS.includes(currentDay)){
+    pendingExpansion=true;
+    expansionMsg=`📦 Expansion day! (${dayToDate(currentDay)}) — Check for ${EXPANSION_SIZE} new teams.`;
+    saveState();renderAll();
+    return;
+  }
+
   buildDayQueue();
   saveState();renderAll();
 }
@@ -631,7 +727,7 @@ async function initSeason(){
 
   tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
-  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};
+  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};pendingExpansion=false;expansionMsg='';
   // Preserve palmares across seasons, increment year
   palmares=oldPalmares;
   seasonYear=(seasonYear||0)+1;
@@ -680,8 +776,8 @@ async function syncNames(){
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,h2h,palmares,seasonYear}))}catch(e){}}
-function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;h2h=s.h2h||{};palmares=s.palmares||[];seasonYear=s.seasonYear||1;return allTeams.length>0}catch(e){return false}}
+function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,h2h,palmares,seasonYear,pendingExpansion,expansionMsg}))}catch(e){}}
+function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;h2h=s.h2h||{};palmares=s.palmares||[];seasonYear=s.seasonYear||1;pendingExpansion=s.pendingExpansion||false;expansionMsg=s.expansionMsg||"";return allTeams.length>0}catch(e){return false}}
 
 // ═══════════════════════════════════════════════════════════════
 // TABS + RENDER
@@ -701,6 +797,9 @@ function renderSeason(){
   h+=`<div class="controls">`;
   if(currentDay===0){
     h+=`<button class="btn" onclick="advanceDay()">▶ Start Season (${dayToDate(1)})</button>`;
+  }else if(pendingExpansion){
+    h+=`<button class="btn" onclick="checkExpansion()">📦 Check Expansion</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="skipExpansion()">Skip</button>`;
   }else if(seasonDone){
     h+=`<div class="banner banner-gold" style="margin:0">🏆 Season Complete!</div>`;
   }else if(!daySimmed){
@@ -708,8 +807,8 @@ function renderSeason(){
     h+=`<button class="btn btn-outline btn-sm" onclick="simRestOfDay();renderAll()">Sim Rest of Day</button>`;
   }else{
     h+=`<button class="btn" onclick="advanceDay()">▶ Next Day (${dayToDate(currentDay+1)})</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<7&&!seasonDone;i++){advanceDay();if(!daySimmed)simRestOfDay()}renderAll()">+7 Days</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<30&&!seasonDone;i++){advanceDay();if(!daySimmed)simRestOfDay()}renderAll()">+30 Days</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<7&&!seasonDone&&!pendingExpansion;i++){advanceDay();if(!pendingExpansion&&!daySimmed)simRestOfDay()}renderAll()">+7 Days</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<30&&!seasonDone&&!pendingExpansion;i++){advanceDay();if(!pendingExpansion&&!daySimmed)simRestOfDay()}renderAll()">+30 Days</button>`;
   }
   h+=`<span style="margin-left:auto;display:flex;gap:6px">`;
   if(seasonDone)h+=`<button class="btn btn-sm" onclick="initSeason()">New Season (Y${seasonYear+1})</button>`;
@@ -717,6 +816,9 @@ function renderSeason(){
   h+=`<button class="btn btn-reset btn-sm" onclick="if(confirm('Full reset? This clears all history.'))resetSeason()">Full Reset</button>`;
   h+=`</span>`;
   h+=`</div>`;
+
+  // Expansion message
+  if(expansionMsg)h+=`<div class="banner banner-gold">${expansionMsg}</div>`;
 
 
 
