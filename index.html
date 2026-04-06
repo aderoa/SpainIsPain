@@ -169,24 +169,15 @@ const PROV_FLAGS={
   'Melilla':'Flag_of_Melilla.svg',
 };
 function flagUrl(file,w){return FP+file+'?width='+w}
-function flagImg(com,prov,size){
+function flagImg(com,size){
   const s=size||14;
   const h=Math.round(s*0.67);
-  // Try provincia-specific flag, then comunidad flag
-  const pf=prov&&PROV_FLAGS[prov];
   const cf=COM_FLAGS[com];
-  if(!pf&&!cf)return'';
-  if(pf){
-    // Render provincia flag with comunidad fallback on error
-    const fallback=cf?`this.src='${flagUrl(cf,s*2)}';this.onerror=function(){this.style.display='none'}`:`this.style.display='none'`;
-    return`<img src="${flagUrl(pf,s*2)}" width="${s}" height="${h}" style="vertical-align:middle;margin-right:2px;border-radius:1px;object-fit:cover" onerror="${fallback}" loading="lazy">`;
-  }
-  return`<img src="${flagUrl(cf,s*2)}" width="${s}" height="${h}" style="vertical-align:middle;margin-right:2px;border-radius:1px;object-fit:cover" onerror="this.style.display='none'" loading="lazy">`;
+  if(!cf)return'';
+  return`<img src="${flagUrl(cf,s*2)}" width="${s}" height="${h}" style="vertical-align:middle;margin-right:3px;border-radius:1px;object-fit:cover" onerror="this.style.display='none'" loading="lazy">`;
 }
-function regBadge(com,prov){
-  return flagImg(com,prov,14);
-}
-function comFlag(com,size){return flagImg(com,null,size||14)}
+function regBadge(com){return flagImg(com,14)}
+function comFlag(com,size){return flagImg(com,size||14)}
 
 // Date helpers
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -312,10 +303,8 @@ function selectTeams(t){
   const host=allTeams[t.hostIdx];
   const ranked=getRanked();
   const n=t.teamCount;
-  const avail=i=>{initStats(i);return stats[i].busy<t.startDay};
-  // For top-12: teams must be free 7 days before (so they don't get stuck in minor tournaments)
-  // For others: just need to not be currently busy
-  const availTop12=i=>{initStats(i);return stats[i].busy<=t.startDay-COOL};
+  const avail=i=>{initStats(i);return stats[i].busy<t.startDay&&!isHostFrozen(i,t.startDay)};
+  const availTop12=i=>{initStats(i);return stats[i].busy<=t.startDay-COOL&&!isHostFrozen(i,t.startDay)};
   const fn=isTop12(t)?availTop12:avail;
   const sel=new Set([t.hostIdx]);
 
@@ -327,27 +316,25 @@ function selectTeams(t){
     ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!sel.has(i)&&fn(i)).forEach(i=>{if(sel.size<n)sel.add(i)});
     for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
   }else{
-    // Half local (same provincia > same comunidad)
+    // Half local — RANDOMIZED (not always the biggest), same provincia > comunidad
     const localTarget=Math.floor(n/2);
     const local=ranked.filter(i=>!sel.has(i)&&avail(i)&&(allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad));
+    // Weighted shuffle: fewest tournaments played get priority, but still random
     local.sort((a,b)=>{
-      const ap=allTeams[a].provincia===host.provincia?0:1;
-      const bp=allTeams[b].provincia===host.provincia?0:1;
-      if(ap!==bp)return ap-bp;
-      return(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value;
+      const sa=stats[a]?.tp||0,sb_=stats[b]?.tp||0;
+      if(sa!==sb_)return sa-sb_;
+      return Math.random()-0.5;
     });
     local.slice(0,localTarget-1).forEach(i=>sel.add(i));
 
-    // Half random MUST be from OUTSIDE host comunidad — fewest tournaments first
+    // Half random from OUTSIDE host comunidad — fewest tournaments first
     const outsiders=ranked.filter(i=>!sel.has(i)&&avail(i)&&allTeams[i].comunidad!==host.comunidad);
     outsiders.sort((a,b)=>{
       const sa=stats[a]?.tp||0,sb_=stats[b]?.tp||0;
       if(sa!==sb_)return sa-sb_;
       return Math.random()-0.5;
     });
-    const randomTarget=n-sel.size;
-    outsiders.slice(0,randomTarget).forEach(i=>sel.add(i));
-    // If not enough outsiders, fill with anyone available
+    outsiders.slice(0,n-sel.size).forEach(i=>sel.add(i));
     if(sel.size<n){
       const fill=ranked.filter(i=>!sel.has(i)&&avail(i));
       fill.sort(()=>Math.random()-0.5);
@@ -357,51 +344,73 @@ function selectTeams(t){
 
   const arr=[...sel].sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
   arr.forEach(i=>{initStats(i);stats[i].busy=t.startDay+t.days-1;stats[i].tp++});
+  // Store seed map: teamIdx → seed number (1-indexed, 0 = unseeded)
+  const halfSeeds=Math.floor(n/2);
+  t.seedMap={};
+  arr.forEach((tIdx,i)=>{t.seedMap[tIdx]=i<halfSeeds?i+1:0});
   t.teams=arr;
   t.bracket=buildTennisBracket(arr);
 }
 
-// Tennis-style bracket: top half seeded in fixed positions, bottom half drawn randomly
+// Host calendar freeze: hosts can't be picked for other tournaments 7 days before their own
+function isHostFrozen(tIdx,day){
+  const hosted=tournaments.find(t=>t.hostIdx===tIdx&&!t.complete);
+  if(!hosted)return false;
+  return day>=hosted.startDay-COOL&&day<hosted.startDay;
+}
+
 function buildTennisBracket(teams){
   const n=teams.length;
   if(n<2)return teams;
-  const halfSeeds=Math.floor(n/2); // 8 seeds for 16, 16 seeds for 32
+  const halfSeeds=Math.floor(n/2);
   const seeded=teams.slice(0,halfSeeds);
   const unseeded=[...teams.slice(halfSeeds)];
-  // Shuffle unseeded
   for(let i=unseeded.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[unseeded[i],unseeded[j]]=[unseeded[j],unseeded[i]]}
-
-  // Seed placement positions (which match slot each seed gets)
-  // For 16-team (8 seeds): S1 vs unseeded at top, S2 vs unseeded at bottom, etc.
-  // Tennis-style: seeds placed so they meet as late as possible
-  const seedSlots16=[0,14,8,6,4,10,12,2]; // S1→match0, S2→match7, S3→match4, S4→match3...
+  const seedSlots16=[0,14,8,6,4,10,12,2];
   const seedSlots32=[0,30,16,14,8,22,24,6,4,26,20,10,12,18,28,2];
-
   const slots=n===32?seedSlots32:seedSlots16;
   const bracket=new Array(n).fill(null);
-
-  // Place seeds: each seed goes in an even slot (first team of a match pair)
-  seeded.forEach((tIdx,si)=>{
-    if(si<slots.length)bracket[slots[si]]=tIdx;
-  });
-
-  // Fill remaining slots with unseeded
+  seeded.forEach((tIdx,si)=>{if(si<slots.length)bracket[slots[si]]=tIdx});
   let ui=0;
-  for(let i=0;i<n;i++){
-    if(bracket[i]===null&&ui<unseeded.length){
-      bracket[i]=unseeded[ui++];
-    }
-  }
+  for(let i=0;i<n;i++){if(bracket[i]===null&&ui<unseeded.length){bracket[i]=unseeded[ui++]}}
   return bracket;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MATCH ENGINE
+// MATCH ENGINE — with home advantage
 // ═══════════════════════════════════════════════════════════════
-function simMatch(a,b){
+function simMatch(a,b,tournId){
   const t1=allTeams[a],t2=allTeams[b];
   const best=Math.max(t1.value,t2.value),worst=Math.min(t1.value,t2.value);
-  const ratio=worst/best,thr=Math.floor(ratio*100);
+  const ratio=worst/best;
+  let thr=Math.floor(ratio*100);
+
+  // Home advantage: bonus to threshold if playing in home territory
+  let homeBonus='';
+  if(tournId!=null){
+    const tourn=tournaments[tournId];
+    const hostTeam=allTeams[tourn.hostIdx];
+    // Check each team for home advantage
+    [a,b].forEach(tIdx=>{
+      const team=allTeams[tIdx];
+      let bonus=0;
+      if(team.name===hostTeam.name)bonus=10;        // host city
+      else if(team.provincia===hostTeam.provincia)bonus=5;  // same province
+      else if(team.comunidad===hostTeam.comunidad)bonus=3;  // same region
+      if(bonus>0){
+        // Bonus adds to threshold if this team is the weaker one, or subtracts if stronger
+        if(tIdx===(t1.value<=t2.value?a:b)){
+          thr=Math.min(100,thr+bonus); // weaker team gets boost
+        }else{
+          thr=Math.max(0,thr-bonus); // stronger team's opponent gets boost = their threshold drops... 
+          // Actually: threshold is "chance for weaker to win", so if the STRONGER team has home advantage,
+          // the weaker team's chance decreases
+        }
+        homeBonus+=(homeBonus?' ':'')+(team.name.substring(0,8))+' +'+bonus+'%';
+      }
+    });
+  }
+
   const roll=Math.floor(Math.random()*200)+1;
   const ww=roll<=thr;
   const bi=t1.value>=t2.value?a:b,wi_=t1.value>=t2.value?b:a;
@@ -411,7 +420,7 @@ function simMatch(a,b){
   if(lr>0.5){stolen=Math.round(allTeams[losI].value*0.1);allTeams[winI].value+=stolen;allTeams[losI].value-=stolen}else sb=true;
   initStats(winI);initStats(losI);
   stats[winI].played++;stats[winI].wins++;stats[losI].played++;stats[losI].losses++;
-  return{a,b,winI,losI,roll,thr,ww,stolen,sb,n1:t1.name,n2:t2.name,wn:allTeams[winI].name,ln:allTeams[losI].name};
+  return{a,b,winI,losI,roll,thr,ww,stolen,sb,n1:t1.name,n2:t2.name,wn:allTeams[winI].name,ln:allTeams[losI].name,homeBonus};
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -457,7 +466,7 @@ function buildDayQueue(){
 function playNextInQueue(){
   if(queuePos>=dayQueue.length)return;
   const q=dayQueue[queuePos];
-  const res=simMatch(q.t1,q.t2);
+  const res=simMatch(q.t1,q.t2,q.tid);
   q.result=res;
   // Store in tournament
   const t=tournaments[q.tid];
@@ -575,25 +584,29 @@ function renderSeason(){
       const host=allTeams[t.hostIdx];
       const thCls=t.label==='Grand Slam'?'th-gs':t.label==='Level 2'?'th-l2':'th-lo';
       h+=`<div class="tourn-header-bar ${thCls}">
-        <span class="th-name">${regBadge(host.comunidad,host.provincia)}<span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
+        <span class="th-name">${regBadge(host.comunidad)}<span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
         <span class="th-meta">${t.teamCount} teams · ${matches[0].roundName}${t.complete?' · 🏆 '+allTeams[t.winner].name:''}</span>
       </div>`;
 
       matches.forEach(q=>{
         const isCur=!daySimmed&&q.qIdx===queuePos;
         const t1=allTeams[q.t1],t2=allTeams[q.t2];
+        const tourn=tournaments[q.tid];
+        const s1=tourn.seedMap?.[q.t1];const s2=tourn.seedMap?.[q.t2];
+        const seed1=s1?`<span class="mono" style="font-size:.6rem;color:var(--gold);margin-right:3px">[${s1}]</span>`:'';
+        const seed2=s2?`<span class="mono" style="font-size:.6rem;color:var(--gold);margin-left:3px">[${s2}]</span>`:'';
         if(q.result){
           const r=q.result;
           const w1=r.winI===q.t1;
           h+=`<div class="match-card played-m fade-in" id="mq-${q.qIdx}">
             <div class="match-row">
               <div class="match-team"><div>
-                <div class="mname">${regBadge(t1.comunidad,t1.provincia)}${r.n1} ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
+                <div class="mname">${seed1}${regBadge(t1.comunidad)}${r.n1} ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
                 <div class="mval">${fmt(t1.value)}</div>
               </div></div>
               <div class="match-vs">${q.roundName}</div>
               <div class="match-team right"><div>
-                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}${r.n2}${regBadge(t2.comunidad,t2.provincia)}</div>
+                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}${r.n2}${regBadge(t2.comunidad)}${seed2}</div>
                 <div class="mval">${fmt(t2.value)}</div>
               </div></div>
             </div>
@@ -602,18 +615,19 @@ function renderSeason(){
               <span class="tag">Roll: <b>${r.roll}</b></span>
               <span class="tag">${r.ww?'🎲 Upset':'📊'}</span>
               <span class="tag">${r.sb?'no steal':'<span style="color:var(--orange)">±'+fmt(r.stolen)+'</span>'}</span>
+              ${r.homeBonus?'<span class="tag" style="color:var(--cyan)">🏠 '+r.homeBonus+'</span>':''}
             </div>
           </div>`;
         }else{
           h+=`<div class="match-card${isCur?' current-m':''}" id="mq-${q.qIdx}">
             <div class="match-row">
               <div class="match-team"><div>
-                <div class="mname">${regBadge(t1.comunidad,t1.provincia)}${t1.name}</div>
+                <div class="mname">${seed1}${regBadge(t1.comunidad)}${t1.name}</div>
                 <div class="mval">${fmt(t1.value)}</div>
               </div></div>
               <div class="match-vs">${isCur?'<span style="color:var(--gold)">NEXT</span>':q.roundName}</div>
               <div class="match-team right"><div>
-                <div class="mname">${t2.name}${regBadge(t2.comunidad,t2.provincia)}</div>
+                <div class="mname">${t2.name}${regBadge(t2.comunidad)}${seed2}</div>
                 <div class="mval">${fmt(t2.value)}</div>
               </div></div>
             </div>
@@ -643,7 +657,7 @@ function renderCalendar(){
   tournaments.filter(t=>isTop12(t)).sort((a,b)=>a.startDay-b.startDay).forEach(t=>{
     const host=allTeams[t.hostIdx];
     h+=`<div style="font-size:.78rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
-      ${regBadge(host.comunidad,host.provincia)}<span class="tier-badge ${t.css}" style="margin-right:4px">${t.label}</span>
+      ${regBadge(host.comunidad)}<span class="tier-badge ${t.css}" style="margin-right:4px">${t.label}</span>
       <b>${host.name}</b> · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
       ${t.complete?' · 🏆 '+allTeams[t.winner].name:''}
     </div>`;
@@ -674,7 +688,7 @@ function renderRankings(){
   h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Region</th><th>Value</th><th>Pts</th><th>W</th><th>L</th><th>T</th></tr></thead><tbody>`;
   ranked.forEach((i,r)=>{
     const t=allTeams[i],s=stats[i]||{};
-    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad)}${t.name}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
       <td class="val">${fmt(t.value)}</td>
       <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
@@ -738,7 +752,7 @@ function renderRegional(){
     h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>From</th><th>Pts in ${com}</th></tr></thead><tbody>`;
     sorted.forEach(([idx,ep],r)=>{
       const t=allTeams[idx];
-      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad)}${t.name}</td>
         <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
         <td class="mono" style="color:var(--gold)">${ep}</td></tr>`;
     });
@@ -761,11 +775,11 @@ function renderRegional(){
     const totalP=entries.reduce((s,[,v])=>s+v,0);
     const sorted=entries.sort((a,b)=>b[1]-a[1]).slice(0,20);
     const tournCount=tournaments.filter(t=>t.complete&&allTeams[t.hostIdx].provincia===prov).length;
-    h+=`<details style="margin-bottom:6px"><summary style="cursor:pointer;padding:4px 0;font-size:.82rem">${regBadge(com,prov)}${prov} <span class="mono" style="font-size:.68rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.68rem;color:var(--muted)">(${tournCount} tourn.)</span></summary>`;
+    h+=`<details style="margin-bottom:6px"><summary style="cursor:pointer;padding:4px 0;font-size:.82rem">${regBadge(com)}${prov} <span class="mono" style="font-size:.68rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.68rem;color:var(--muted)">(${tournCount} tourn.)</span></summary>`;
     h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>From</th><th>Pts in ${prov}</th></tr></thead><tbody>`;
     sorted.forEach(([idx,ep],r)=>{
       const t=allTeams[idx];
-      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad)}${t.name}</td>
         <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
         <td class="mono" style="color:var(--gold)">${ep}</td></tr>`;
     });
@@ -790,7 +804,7 @@ function renderTournaments(){
     tt.sort((a,b)=>a.startDay-b.startDay).slice(0,30).forEach(t=>{
       const host=allTeams[t.hostIdx];
       h+=`<div style="font-size:.78rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
-        ${regBadge(host.comunidad,host.provincia)}<b>${host.name}</b> <span style="color:var(--muted)">${host.provincia}</span>
+        ${regBadge(host.comunidad)}<b>${host.name}</b> <span style="color:var(--muted)">${host.provincia}</span>
         · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
         ${t.complete?' · 🏆 '+allTeams[t.winner].name+' | 🥈 '+allTeams[t.runnerUp].name:''}
       </div>`;
@@ -811,7 +825,7 @@ function renderTeamsTab(){
   sorted.slice(0,100).forEach((i,r)=>{
     const t=allTeams[i],d=t.value-t.startValue;
     const tier=getTier(i+1);
-    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad)}${t.name}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.provincia}</td>
       <td class="val">${fmt(t.value)}</td>
