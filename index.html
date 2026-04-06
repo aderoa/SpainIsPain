@@ -103,6 +103,7 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
   <button onclick="showTab('regional')">Regions</button>
   <button onclick="showTab('tournaments')">Tournaments</button>
   <button onclick="showTab('teams')">Teams</button>
+  <button onclick="showTab('history')">History</button>
 </nav>
 
 <div id="tab-season" class="tab active"></div>
@@ -111,6 +112,7 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 <div id="tab-regional" class="tab"></div>
 <div id="tab-tournaments" class="tab"></div>
 <div id="tab-teams" class="tab"></div>
+<div id="tab-history" class="tab"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -203,10 +205,12 @@ let currentDay=0;
 let pts={};
 let stats={};
 let seasonDone=false;
-// Game-by-game queue
-let dayQueue=[];    // [{tournId, round, matchIdx, team1, team2}]
-let queuePos=0;     // current position in dayQueue
+let dayQueue=[];
+let queuePos=0;
 let daySimmed=false;
+let h2h={};         // {"min-max": [minWins, maxWins]} where min/max are sorted team indices
+let palmares=[];    // [{year,tournId,label,css,hostName,hostCom,winnerName,winnerCom,runnerUpName,thirdName}]
+let seasonYear=1;
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -232,45 +236,40 @@ function parseCSV(text){
 // ═══════════════════════════════════════════════════════════════
 // CALENDAR — random placement like CycleSim
 // ═══════════════════════════════════════════════════════════════
+const TOP12_MIN_DAY=46; // No top-12 before Feb 15
+
 function buildCalendar(){
   calendar=Array.from({length:DAYS+1},()=>[]);
   const dayLoad=new Array(DAYS+1).fill(0);
 
-  // 1) Top 12: shuffle randomly, place one by one ensuring no overlap
+  // 1) Top 12: shuffle, place randomly after Feb 15, no overlap
   const top12=[...tournaments.filter(t=>isTop12(t))];
-  // Shuffle top 12 completely
   for(let i=top12.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[top12[i],top12[j]]=[top12[j],top12[i]]}
 
-  const top12Windows=[]; // [{start,end}]
-
+  const top12Windows=[];
   top12.forEach(t=>{
-    // Collect all valid start days (no overlap with other top12)
     const valid=[];
-    for(let d=1;d<=DAYS-t.days+1;d++){
+    for(let d=TOP12_MIN_DAY;d<=DAYS-t.days+1;d++){
       let ok=true;
       for(const w of top12Windows){
-        // Must not overlap at all
         if(d<=w.end&&d+t.days-1>=w.start){ok=false;break}
       }
       if(ok)valid.push(d);
     }
-    // Pick a random valid day
-    const startDay=valid[Math.floor(Math.random()*valid.length)]||1;
+    const startDay=valid[Math.floor(Math.random()*valid.length)]||TOP12_MIN_DAY;
     t.startDay=startDay;
     for(let d=0;d<t.days;d++){calendar[startDay+d].push(t.id);dayLoad[startDay+d]++}
     top12Windows.push({start:startDay,end:startDay+t.days-1});
   });
 
-  // Top 12 running days for penalty
   const top12Days=new Set();
   top12Windows.forEach(w=>{for(let d=w.start;d<=w.end;d++)top12Days.add(d)});
 
-  // 2) All other tournaments: random placement with soft constraints
+  // 2) All other tournaments: truly random with load balancing
   const rest=[...tournaments.filter(t=>!isTop12(t))];
-  // Full shuffle
   for(let i=rest.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]]}
 
-  const provWindows={}; // {prov: [{start,end}]}
+  const provWindows={};
 
   rest.forEach(t=>{
     const prov=allTeams[t.hostIdx].provincia;
@@ -278,18 +277,19 @@ function buildCalendar(){
 
     let bestDay=1,bestScore=Infinity;
     for(let d=1;d<=DAYS-dur+1;d++){
-      let score=0;
+      // Large random base ensures truly random placement
+      let score=Math.random()*200;
+      // Load penalty — keeps days from getting too packed
       for(let dd=0;dd<dur;dd++){
-        score+=dayLoad[d+dd]*4;
+        score+=dayLoad[d+dd]*15;
         if(top12Days.has(d+dd))score+=3000;
       }
+      // Same-province penalty
       const pw=provWindows[prov]||[];
       for(const w of pw){
         if(d<=w.end+2&&d+dur-1>=w.start-2)score+=800;
         if(d<=w.end&&d+dur-1>=w.start)score+=3000;
       }
-      // Random jitter so ties scatter naturally
-      score+=Math.random()*8;
       if(score<bestScore){bestScore=score;bestDay=d}
     }
 
@@ -427,7 +427,20 @@ function simMatch(a,b,tournId){
   if(lr>0.5){stolen=Math.round(allTeams[losI].value*0.1);allTeams[winI].value+=stolen;allTeams[losI].value-=stolen}else sb=true;
   initStats(winI);initStats(losI);
   stats[winI].played++;stats[winI].wins++;stats[losI].played++;stats[losI].losses++;
+  // H2H tracking
+  const hk=Math.min(a,b)+'-'+Math.max(a,b);
+  if(!h2h[hk])h2h[hk]=[0,0];
+  if(winI===Math.min(a,b))h2h[hk][0]++;else h2h[hk][1]++;
   return{a,b,winI,losI,roll,thr,ww,stolen,sb,n1:t1.name,n2:t2.name,wn:allTeams[winI].name,ln:allTeams[losI].name,homeBonus};
+}
+
+function getH2H(a,b){
+  const hk=Math.min(a,b)+'-'+Math.max(a,b);
+  const rec=h2h[hk];
+  if(!rec)return null;
+  const aWins=a===Math.min(a,b)?rec[0]:rec[1];
+  const bWins=a===Math.min(a,b)?rec[1]:rec[0];
+  return{aWins,bWins};
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -476,7 +489,7 @@ function buildDayQueue(){
   daySimmed=dayQueue.length===0;
 }
 
-let lastWinMsg='';
+
 
 function playNextInQueue(){
   if(queuePos>=dayQueue.length)return;
@@ -487,14 +500,13 @@ function playNextInQueue(){
   if(q.rIdx==='bronze'){
     t.results.bronze=[res];
     t.third=res.winI;t.fourth=res.losI;
-    lastWinMsg=`🥉 ${res.wn} wins Bronze at ${allTeams[t.hostIdx].name}!`;
+    q.winMsg=`🥉 ${res.wn} wins Bronze!`;
   }else{
     if(!t.results[q.rIdx])t.results[q.rIdx]=[];
     t.results[q.rIdx].push(res);
-    lastWinMsg=`${res.wn} defeats ${res.ln}`;
+    q.winMsg=`${res.wn} advances`;
   }
   queuePos++;
-  // Check if all matches in this round for this tournament are done
   const tr=totalRounds(t);
   if(q.rIdx===tr-1){
     const roundMatches=dayQueue.filter(x=>x.tid===q.tid&&x.rIdx===q.rIdx);
@@ -502,10 +514,18 @@ function playNextInQueue(){
       t.winner=roundMatches[0].result.winI;t.runnerUp=roundMatches[0].result.losI;t.complete=true;
       awardPoints(t);
       t.teams.forEach(i=>{initStats(i);stats[i].busy=0});
-      lastWinMsg=`🏆 ${allTeams[t.winner].name} wins the ${t.label} at ${allTeams[t.hostIdx].name}!`;
+      q.winMsg=`🏆 ${allTeams[t.winner].name} wins the ${t.label}!`;
+      // Record in palmares
+      palmares.push({
+        year:seasonYear,tournId:q.tid,label:t.label,css:t.css,
+        hostName:allTeams[t.hostIdx].name,hostCom:allTeams[t.hostIdx].comunidad,
+        winnerName:allTeams[t.winner].name,winnerCom:allTeams[t.winner].comunidad,
+        runnerUpName:allTeams[t.runnerUp].name,
+        thirdName:t.third!=null?allTeams[t.third].name:null,
+      });
     }
   }
-  if(queuePos>=dayQueue.length){daySimmed=true;lastWinMsg=''}
+  if(queuePos>=dayQueue.length)daySimmed=true;
   saveState();
   renderAll();
 }
@@ -514,7 +534,7 @@ function simRestOfDay(){while(queuePos<dayQueue.length)playNextInQueue()}
 
 function advanceDay(){
   if(seasonDone)return;
-  lastWinMsg='';
+  
   currentDay++;
   if(currentDay>DAYS){seasonDone=true;saveState();renderAll();return}
   buildDayQueue();
@@ -549,7 +569,7 @@ async function initSeason(){
   }catch(e){document.getElementById('h-info').textContent='⚠️ Fetch failed';return}
   tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
-  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;lastWinMsg='';
+  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};seasonYear=1;
   document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments`;
   saveState();renderAll();
 }
@@ -558,14 +578,14 @@ function resetSeason(){localStorage.removeItem(SAVE_KEY);initSeason()}
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,lastWinMsg}))}catch(e){}}
-function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;lastWinMsg=s.lastWinMsg||'';return allTeams.length>0}catch(e){return false}}
+function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,h2h,palmares,seasonYear}))}catch(e){}}
+function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;h2h=s.h2h||{};palmares=s.palmares||[];seasonYear=s.seasonYear||1;return allTeams.length>0}catch(e){return false}}
 
 // ═══════════════════════════════════════════════════════════════
 // TABS + RENDER
 // ═══════════════════════════════════════════════════════════════
 function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active')}
-function renderAll(){renderSeason();renderCalendar();renderRankings();renderRegional();renderTournaments();renderTeamsTab();
+function renderAll(){renderSeason();renderCalendar();renderRankings();renderRegional();renderTournaments();renderTeamsTab();renderHistory();
   const done=tournaments.filter(t=>t.complete).length;
   document.getElementById('h-info').textContent=`${dayToDate(currentDay||1)} (Day ${currentDay}) · ${done}/${tournaments.length} done · ${allTeams.length} teams`;
 }
@@ -592,13 +612,7 @@ function renderSeason(){
   h+=`<button class="btn btn-reset btn-sm" onclick="resetSeason()" style="margin-left:auto">Reset</button>`;
   h+=`</div>`;
 
-  // Winner announcement
-  if(lastWinMsg&&!daySimmed){
-    const isTrophy=lastWinMsg.startsWith('🏆');
-    const isBronze=lastWinMsg.startsWith('🥉');
-    const cls=isTrophy?'banner-gold':isBronze?'banner-green':'banner';
-    h+=`<div class="${cls}" style="${!isTrophy&&!isBronze?'background:rgba(212,168,67,.05);border:1px solid var(--border);color:var(--text)':''};font-weight:600;text-align:center">${lastWinMsg}</div>`;
-  }
+
 
   if(currentDay>0){
     h+=`<div class="day-nav"><h2>${dayToDate(currentDay)}</h2><span class="day-badge">Day ${currentDay} · ${dayQueue.length} matches</span></div>`;
@@ -623,9 +637,13 @@ function renderSeason(){
         const s1=tourn.seedMap?.[q.t1];const s2=tourn.seedMap?.[q.t2];
         const seed1=s1?`<span class="mono" style="font-size:.6rem;color:var(--gold);margin-right:3px">[${s1}]</span>`:'';
         const seed2=s2?`<span class="mono" style="font-size:.6rem;color:var(--gold);margin-left:3px">[${s2}]</span>`:'';
+        const rec=getH2H(q.t1,q.t2);
+        const h2hStr=rec?`<span class="mono" style="font-size:.62rem;color:var(--muted)">H2H: ${rec.aWins}-${rec.bWins}</span>`:`<span style="font-size:.62rem;color:var(--muted)">First meeting</span>`;
         if(q.result){
           const r=q.result;
           const w1=r.winI===q.t1;
+          const recA=getH2H(q.t1,q.t2);
+          const h2hA=recA?`H2H: ${recA.aWins}-${recA.bWins}`:'';
           h+=`<div class="match-card played-m fade-in" id="mq-${q.qIdx}">
             <div class="match-row">
               <div class="match-team"><div>
@@ -644,10 +662,13 @@ function renderSeason(){
               <span class="tag">${r.ww?'🎲 Upset':'📊'}</span>
               <span class="tag">${r.sb?'no steal':'<span style="color:var(--orange)">±'+fmt(r.stolen)+'</span>'}</span>
               ${r.homeBonus?'<span class="tag" style="color:var(--cyan)">🏠 '+r.homeBonus+'</span>':''}
+              <span class="tag">${h2hA}</span>
             </div>
+            ${q.winMsg?'<div style="padding:8px 16px;border-top:1px solid var(--border);font-weight:700;font-size:.82rem;color:'+(q.winMsg.includes('🏆')?'var(--gold)':q.winMsg.includes('🥉')?'var(--green)':'var(--text)')+'">'+q.winMsg+'</div>':''}
           </div>`;
         }else{
           h+=`<div class="match-card${isCur?' current-m':''}" id="mq-${q.qIdx}">
+            <div style="padding:6px 16px 0">${h2hStr}</div>
             <div class="match-row">
               <div class="match-team"><div>
                 <div class="mname">${seed1}${regBadge(t1.comunidad)}${t1.name}</div>
@@ -862,6 +883,56 @@ function renderTeamsTab(){
   });
   h+=`</tbody></table>`;
   if(allTeams.length>100)h+=`<div style="font-size:.72rem;color:var(--muted);margin-top:6px">Top 100 of ${allTeams.length}</div>`;
+  el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER: HISTORY (all-time palmares)
+// ═══════════════════════════════════════════════════════════════
+function renderHistory(){
+  const el=document.getElementById('tab-history');
+  if(!palmares.length){el.innerHTML=`<p style="color:var(--muted);text-align:center;padding:30px">No tournaments completed yet.</p>`;return}
+
+  let h='';
+  // Group by tier
+  const tiers=['Grand Slam','Level 2','Level 3','Level 4','Level 5','Level 6','Level 7','Level 8'];
+  tiers.forEach(tier=>{
+    const entries=palmares.filter(p=>p.label===tier);
+    if(!entries.length)return;
+    const css=entries[0].css;
+    h+=`<div class="section-title"><span class="tier-badge ${css}" style="margin-right:6px">${tier}</span> ${entries.length} tournaments</div>`;
+    h+=`<table class="tbl"><thead><tr><th>Yr</th><th>Tournament</th><th>🥇 Winner</th><th>🥈 Runner-Up</th><th>🥉 Third</th></tr></thead><tbody>`;
+    entries.forEach(p=>{
+      h+=`<tr>
+        <td class="mono" style="color:var(--muted)">${p.year}</td>
+        <td>${regBadge(p.hostCom)}<b>${p.hostName}</b></td>
+        <td style="font-weight:600;color:var(--gold)">${regBadge(p.winnerCom)}${p.winnerName}</td>
+        <td>${p.runnerUpName||'—'}</td>
+        <td>${p.thirdName||'—'}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table>`;
+  });
+
+  // Win counts summary
+  h+=`<div class="section-title">All-Time Winners</div>`;
+  const winCounts={};
+  palmares.forEach(p=>{
+    if(!winCounts[p.winnerName])winCounts[p.winnerName]={wins:0,com:p.winnerCom,gs:0,l2:0,other:0};
+    winCounts[p.winnerName].wins++;
+    if(p.label==='Grand Slam')winCounts[p.winnerName].gs++;
+    else if(p.label==='Level 2')winCounts[p.winnerName].l2++;
+    else winCounts[p.winnerName].other++;
+  });
+  const sorted=Object.entries(winCounts).sort((a,b)=>b[1].wins-a[1].wins||(b[1].gs-a[1].gs)||(b[1].l2-a[1].l2));
+  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Total</th><th>GS</th><th>L2</th><th>Other</th></tr></thead><tbody>`;
+  sorted.slice(0,50).forEach(([name,d],i)=>{
+    h+=`<tr><td class="pos">${i+1}</td><td style="font-weight:600">${regBadge(d.com)}${name}</td>
+      <td class="mono" style="color:var(--gold)">${d.wins}</td>
+      <td class="mono">${d.gs||''}</td><td class="mono">${d.l2||''}</td><td class="mono" style="color:var(--muted)">${d.other||''}</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+
   el.innerHTML=h;
 }
 
