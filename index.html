@@ -119,7 +119,7 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vTxJa_oKMLmu1yBLvWDnnuXnb3UduuQIdOrewmqW74XZM3r1VJZR3gO9uHd2GeRaS6vwCxkch0rPdFz/pub?gid=738693130&single=true&output=csv';
-const SAVE_KEY='sip_tourn_v2';
+const SAVE_KEY='sip_tourn_v3';
 const COOL=7;
 const DAYS=365;
 
@@ -573,7 +573,7 @@ async function initSeason(){
   document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments`;
   saveState();renderAll();
 }
-function resetSeason(){localStorage.removeItem(SAVE_KEY);initSeason()}
+function resetSeason(){localStorage.removeItem(SAVE_KEY);localStorage.removeItem('sip_tourn_v2');localStorage.removeItem('sip_tournament_v1');initSeason()}
 
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
