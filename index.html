@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spain is Pain — Belt Simulator</title>
+<title>Spain is Pain — Tournament Season</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e0c0b;--surface:#1a1714;--surface2:#242019;--border:#3a3228;--text:#f0e6d6;--muted:#8a7e6e;--gold:#d4a843;--gold-dim:#b8922e;--red:#c9413b;--red-bright:#e85550;--green:#4caf6a;--blue:#4a8cc9;--orange:#d98a3b;--purple:#9b6dcc;--cyan:#5bbfbf;--font:'Outfit',sans-serif;--mono:'Space Mono',monospace}
@@ -11,229 +11,149 @@
 html{background:var(--bg);color:var(--text);font-family:var(--font)}
 body{min-height:100vh}
 
-header{background:linear-gradient(135deg,#1a0a08,#2a1510,#1a0a08);border-bottom:2px solid var(--gold-dim);padding:28px 32px 24px;position:relative;overflow:hidden}
+header{background:linear-gradient(135deg,#1a0a08,#2a1510,#1a0a08);border-bottom:2px solid var(--gold-dim);padding:24px 32px 20px;position:relative;overflow:hidden}
 header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(212,168,67,.03) 60px,rgba(212,168,67,.03) 61px)}
-header h1{font-size:2.4rem;font-weight:900;letter-spacing:-1px;position:relative;background:linear-gradient(to right,var(--gold),#f0d078,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-header .sub{font-size:.85rem;color:var(--muted);font-weight:400;margin-top:4px;position:relative;letter-spacing:2px;text-transform:uppercase}
-header .round-info{font-size:.75rem;color:var(--gold);font-weight:600;margin-top:6px;position:relative;font-family:var(--mono)}
+header h1{font-size:2.2rem;font-weight:900;letter-spacing:-1px;position:relative;background:linear-gradient(to right,var(--gold),#f0d078,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header .sub{font-size:.8rem;color:var(--muted);margin-top:3px;position:relative;letter-spacing:2px;text-transform:uppercase}
+header .info{font-size:.72rem;color:var(--gold);font-weight:600;margin-top:5px;position:relative;font-family:var(--mono)}
 
 nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;overflow-x:auto}
-nav button{flex:0 0 auto;padding:14px 16px;background:none;border:none;color:var(--muted);font-family:var(--font);font-size:.78rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+nav button{flex:0 0 auto;padding:13px 15px;background:none;border:none;color:var(--muted);font-family:var(--font);font-size:.75rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
 nav button:hover{color:var(--text);background:rgba(212,168,67,.05)}
 nav button.active{color:var(--gold);border-bottom-color:var(--gold)}
 
-.tab{display:none;padding:24px;max-width:1020px;margin:0 auto}
+.tab{display:none;padding:20px;max-width:1060px;margin:0 auto}
 .tab.active{display:block}
 
-.btn{padding:12px 28px;background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:#0e0c0b;font-family:var(--font);font-size:.85rem;font-weight:700;border:none;border-radius:8px;cursor:pointer;letter-spacing:.5px;transition:all .15s}
-.btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,168,67,.25)}
+.btn{padding:10px 24px;background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:#0e0c0b;font-family:var(--font);font-size:.82rem;font-weight:700;border:none;border-radius:7px;cursor:pointer;transition:all .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(212,168,67,.25)}
 .btn:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none}
-.btn-sm{padding:8px 18px;font-size:.78rem}
+.btn-sm{padding:7px 16px;font-size:.75rem}
 .btn-outline{background:transparent;border:1px solid var(--gold-dim);color:var(--gold)}
 .btn-outline:hover{background:rgba(212,168,67,.1)}
 .btn-reset{background:transparent;border:1px solid var(--red);color:var(--red-bright)}
-.btn-reset:hover{background:rgba(201,65,59,.1)}
-.btn-blue{background:linear-gradient(135deg,#3a7ab8,var(--blue));color:#fff}
-.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
 
-table.standings{width:100%;border-collapse:collapse;font-size:.83rem}
-table.standings th{text-align:left;padding:10px 12px;font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
-table.standings td{padding:9px 12px;border-bottom:1px solid rgba(58,50,40,.4);vertical-align:middle}
-table.standings tr:hover td{background:rgba(212,168,67,.03)}
-.pos{font-family:var(--mono);font-weight:700;color:var(--muted);width:30px}
+.section-title{font-size:.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+table.tbl th{text-align:left;padding:8px 10px;font-size:.65rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+table.tbl td{padding:8px 10px;border-bottom:1px solid rgba(58,50,40,.35);vertical-align:middle}
+table.tbl tr:hover td{background:rgba(212,168,67,.03)}
+.pos{font-family:var(--mono);font-weight:700;color:var(--muted);width:28px}
 .val{font-family:var(--mono);color:var(--gold);font-weight:600}
-.w{color:var(--green)}.l{color:var(--red-bright)}.mono{font-family:var(--mono)}
+.mono{font-family:var(--mono)}
 .delta-pos{color:var(--green)}.delta-neg{color:var(--red-bright)}
 
-.match-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;transition:border-color .2s}
-.match-card.played{border-color:rgba(212,168,67,.2)}
-.match-card.current{border-color:var(--gold);box-shadow:0 0 20px rgba(212,168,67,.1)}
-.match-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 20px;gap:16px}
-.match-team{display:flex;align-items:center;gap:10px}
-.match-team.right{justify-content:flex-end;text-align:right}
-.mname{font-weight:600;font-size:.93rem;line-height:1.4}.mval{font-family:var(--mono);font-size:.72rem;color:var(--muted)}.mrank{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
-.match-vs{font-family:var(--mono);font-size:.7rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;min-width:40px;text-align:center}
-.match-details{background:var(--surface2);padding:12px 20px;font-size:.76rem;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;border-top:1px solid var(--border)}
-.match-details .tag{display:inline-flex;align-items:center;gap:4px}
-.match-details .tag b{color:var(--text);font-weight:600}
-.winner-tag{font-size:.63rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:rgba(76,175,106,.15);color:var(--green)}
-.loser-tag{font-size:.63rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:rgba(232,85,80,.1);color:var(--red-bright)}
+.tier-gs{background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.25)}
+.tier-2{background:rgba(74,140,201,.1);color:var(--blue);border:1px solid rgba(74,140,201,.2)}
+.tier-3{background:rgba(155,109,204,.1);color:var(--purple);border:1px solid rgba(155,109,204,.2)}
+.tier-4{background:rgba(91,191,191,.08);color:var(--cyan);border:1px solid rgba(91,191,191,.18)}
+.tier-lo{background:rgba(138,126,110,.08);color:var(--muted);border:1px solid rgba(138,126,110,.18)}
+.tier-badge{display:inline-flex;font-size:.58rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 7px;border-radius:4px}
 
-/* Belt badges — inline small */
-.bb{display:inline-flex;align-items:center;gap:2px;font-size:.52rem;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:1px 5px;border-radius:3px;margin-left:2px;vertical-align:middle}
-.bb-national{background:rgba(212,168,67,.15);color:var(--gold);border:1px solid rgba(212,168,67,.3)}
-.bb-d2{background:rgba(91,191,191,.12);color:var(--cyan);border:1px solid rgba(91,191,191,.25)}
-.bb-regional{background:rgba(74,140,201,.12);color:var(--blue);border:1px solid rgba(74,140,201,.25)}
-.bb-provincial{background:rgba(155,109,204,.12);color:var(--purple);border:1px solid rgba(155,109,204,.25)}
-/* Belt badges — larger */
-.belt-badge{display:inline-flex;align-items:center;gap:4px;font-size:.62rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:5px}
-.belt-badge.belt-national{background:rgba(212,168,67,.15);color:var(--gold);border:1px solid rgba(212,168,67,.3)}
-.belt-badge.belt-d2{background:rgba(91,191,191,.12);color:var(--cyan);border:1px solid rgba(91,191,191,.25)}
-.belt-badge.belt-regional{background:rgba(74,140,201,.12);color:var(--blue);border:1px solid rgba(74,140,201,.25)}
-.belt-badge.belt-provincial{background:rgba(155,109,204,.12);color:var(--purple);border:1px solid rgba(155,109,204,.25)}
+.tourn-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.tourn-card.active-t{border-color:var(--gold)}
+.tourn-card.done-t{border-color:rgba(76,175,106,.2)}
+.tourn-header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.tourn-name{font-weight:700;font-size:.9rem}
+.tourn-meta{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
+.tourn-body{padding:0 16px 12px;font-size:.8rem}
+.match-line{padding:5px 0;border-bottom:1px solid rgba(58,50,40,.25);display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
+.match-line .mw{font-weight:600;color:var(--green)}.match-line .ml{color:var(--muted)}
+.match-line .roll-info{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
 
-.match-belt-tag{padding:10px 20px 0}
-.rank-move{background:var(--surface2);padding:10px 20px;font-size:.73rem;color:var(--muted);border-top:1px solid var(--border);font-family:var(--mono);line-height:1.8}
-.mv-up{color:var(--green)}.mv-down{color:var(--red-bright)}.mv-neutral{color:var(--muted)}
+.day-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.day-nav h2{font-size:1.2rem;font-weight:800}
+.day-badge{font-family:var(--mono);font-size:.72rem;background:var(--surface2);color:var(--gold);padding:5px 12px;border-radius:18px;border:1px solid var(--border)}
 
-.round-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px}
-.round-header h2{font-size:1.3rem;font-weight:800}
-.round-badge{font-family:var(--mono);font-size:.73rem;background:var(--surface2);color:var(--gold);padding:6px 14px;border-radius:20px;border:1px solid var(--border)}
-.priority-badge{font-size:.68rem;padding:5px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-weight:500}
-
-.belts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:20px}
-.belt-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
-.belt-card .bt{font-size:.63rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
-.belt-card .bn{font-size:1rem;font-weight:700;margin-bottom:2px}
-.belt-card .bh{font-size:.82rem;color:var(--muted)}.belt-card .bh b{color:var(--text)}
-.belt-card .bstat{font-size:.7rem;color:var(--muted);margin-top:4px;font-family:var(--mono)}
-
-.teams-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.team-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .15s,border-color .2s}
-.team-card:hover{transform:translateY(-2px);border-color:var(--gold-dim)}
-.team-card .rank{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:.68rem;color:var(--muted)}
-.team-card .name{font-size:1.1rem;font-weight:700;margin-bottom:1px}
-.team-card .region{font-size:.7rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
-.team-card .value{font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--gold)}
-.team-card .vd{font-family:var(--mono);font-size:.68rem;margin-left:5px}
-.team-card .bar-bg{height:5px;background:var(--surface2);border-radius:3px;margin-top:8px;overflow:hidden}
-.team-card .bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width .6s ease}
-.team-card .belt-list{margin-top:6px;display:flex;gap:3px;flex-wrap:wrap}
-.div-badge{font-size:.58rem;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:4px;text-transform:uppercase}
-.div-d1{background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.2)}
-.div-d2n{background:rgba(91,191,191,.1);color:var(--cyan);border:1px solid rgba(91,191,191,.2)}
-.div-d2s{background:rgba(217,138,59,.1);color:var(--orange);border:1px solid rgba(217,138,59,.2)}
-
-.section-title{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.banner{padding:14px 20px;border-radius:8px;margin-bottom:16px;font-size:.85rem;font-weight:500}
+.banner{padding:12px 18px;border-radius:7px;margin-bottom:14px;font-size:.82rem;font-weight:500}
 .banner-gold{background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold)}
-.banner-blue{background:rgba(74,140,201,.1);border:1px solid rgba(74,140,201,.25);color:var(--blue)}
-.banner-green{background:rgba(76,175,106,.1);border:1px solid rgba(76,175,106,.25);color:var(--green)}
+.banner-green{background:rgba(76,175,106,.08);border:1px solid rgba(76,175,106,.2);color:var(--green)}
+.banner-blue{background:rgba(74,140,201,.08);border:1px solid rgba(74,140,201,.2);color:var(--blue)}
 
-.group-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
-.group-col{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:120px}
-.group-col h3{font-size:.75rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-.group-col.north h3{color:var(--cyan)}.group-col.south h3{color:var(--orange)}
-.group-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border-radius:6px;margin-bottom:6px;font-size:.82rem;cursor:pointer;transition:all .15s;border:1px solid transparent}
-.group-item:hover{border-color:var(--gold-dim)}
-.gi-name{font-weight:600}.gi-val{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
-.gi-move{font-size:.65rem;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.unassigned-pool{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
-.unassigned-pool h3{font-size:.75rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:2px}
+.cal-cell{width:100%;aspect-ratio:1;border-radius:3px;font-size:.45rem;display:flex;align-items:center;justify-content:center;font-family:var(--mono);cursor:default;transition:all .1s}
+.cal-cell.empty{background:var(--surface)}
+.cal-cell.has-t{background:var(--surface2);color:var(--muted)}
+.cal-cell.top12{background:rgba(212,168,67,.15);color:var(--gold)}
+.cal-cell.today{outline:2px solid var(--gold)}
 
-/* Belt log */
-.blog-entry{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(58,50,40,.3);font-size:.82rem}
-.blog-round{font-family:var(--mono);font-size:.7rem;color:var(--muted);padding-top:2px}
-.blog-detail{line-height:1.5}
-.blog-new{color:var(--gold);font-weight:600}
-.blog-defended{color:var(--green)}
-.blog-changed{color:var(--red-bright);font-weight:600}
-
-.history-round{margin-bottom:20px}
-.history-round h3{font-size:.88rem;font-weight:700;margin-bottom:6px;color:var(--gold)}
-.history-match{font-size:.8rem;padding:6px 0;border-bottom:1px solid rgba(58,50,40,.3);line-height:1.6}
-.hw{font-weight:700;color:var(--green)}.hl{color:var(--muted)}
-
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.fade-in{animation:fadeIn .35s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease both}
 </style>
 </head>
 <body>
 
 <header>
   <h1>Spain is Pain</h1>
-  <div class="sub">Belt Championship · Divisions · Expansions</div>
-  <div class="round-info" id="header-info"></div>
+  <div class="sub">Tournament Season · 365 Days</div>
+  <div class="info" id="h-info">Loading teams...</div>
 </header>
 
 <nav>
-  <button class="active" onclick="showTab('sim')">Matchday</button>
+  <button class="active" onclick="showTab('season')">Season</button>
+  <button onclick="showTab('calendar')">Calendar</button>
   <button onclick="showTab('rankings')">Rankings</button>
-  <button onclick="showTab('belts')">Belts</button>
+  <button onclick="showTab('tournaments')">Tournaments</button>
   <button onclick="showTab('teams')">Teams</button>
-  <button onclick="showTab('groups')">D2 Groups</button>
-  <button onclick="showTab('beltlog')">Belt Log</button>
-  <button onclick="showTab('history')">History</button>
 </nav>
 
-<div id="tab-sim" class="tab active"></div>
+<div id="tab-season" class="tab active"></div>
+<div id="tab-calendar" class="tab"></div>
 <div id="tab-rankings" class="tab"></div>
-<div id="tab-belts" class="tab"></div>
+<div id="tab-tournaments" class="tab"></div>
 <div id="tab-teams" class="tab"></div>
-<div id="tab-groups" class="tab"></div>
-<div id="tab-beltlog" class="tab"></div>
-<div id="tab-history" class="tab"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const CSV_URLS=[
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTxJa_oKMLmu1yBLvWDnnuXnb3UduuQIdOrewmqW74XZM3r1VJZR3gO9uHd2GeRaS6vwCxkch0rPdFz/pub?gid=738693130&single=true&output=csv',
-  'https://docs.google.com/spreadsheets/d/1zLlTolBIuZmWhVwEr-R23GbbeyiPYXhiluIhS4mRBE8/gviz/tq?tqx=out:csv&gid=738693130',
-  'https://docs.google.com/spreadsheets/d/1zLlTolBIuZmWhVwEr-R23GbbeyiPYXhiluIhS4mRBE8/export?format=csv&gid=738693130',
-];
-const COOLDOWN=2;
-const D1_SIZE=8;
-const SEED_COUNT=8; // always start with first 8 from CSV or hardcoded
+const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vTxJa_oKMLmu1yBLvWDnnuXnb3UduuQIdOrewmqW74XZM3r1VJZR3gO9uHd2GeRaS6vwCxkch0rPdFz/pub?gid=738693130&single=true&output=csv';
+const SAVE_KEY='sip_tournament_v1';
+const TOP12_COOLING=7;
+const SEASON_DAYS=365;
 
-// Rotating belt priority per round (4-round cycle)
-// Each entry is the order: [first_priority, second, third]
-// 'national'=national+d2, 'regional', 'provincial'
-const PRIORITY_CYCLE=[
-  ['national','regional','provincial'],   // Round 1,5,9...
-  ['regional','national','provincial'],   // Round 2,6,10...
-  ['national','regional','provincial'],   // Round 3,7,11...
-  ['provincial','national','regional'],   // Round 4,8,12...
+// Tier definitions: [maxHostRank, teamCount, days, label, cssClass]
+const TIERS=[
+  [4,32,5,'Grand Slam','tier-gs'],
+  [12,32,5,'Level 2','tier-2'],
+  [28,16,4,'Level 3','tier-3'],
+  [60,16,4,'Level 4','tier-4'],
+  [124,16,4,'Level 5','tier-lo'],
+  [252,16,4,'Level 6','tier-lo'],
+  [508,16,4,'Level 7','tier-lo'],
+  [9999,16,4,'Level 8','tier-lo'],
 ];
 
-function getRoundPriority(rnd){
-  return PRIORITY_CYCLE[(rnd-1)%4];
-}
+// Points per tier: [winner, runner-up, 3rd, 4th, QF losers, R16 losers]
+const POINTS={
+  'Grand Slam':[2000,1000,600,400,200,100],
+  'Level 2':[1000,500,300,200,100,50],
+  'Level 3':[400,200,120,80,40,0],
+  'Level 4':[200,100,60,40,20,0],
+  'Level 5':[100,50,30,20,10,0],
+  'Level 6':[50,25,15,10,5,0],
+  'Level 7':[25,12,8,5,2,0],
+  'Level 8':[10,5,3,2,1,0],
+};
 
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-let teams=[];
-let d1Rankings=[],d2nRankings=[],d2sRankings=[];
-let belts=[];
-let roundNum=0;
-let matchHistory=[];  // [{round,a,b}]
-let curMatchups=[];
-let curResults=[];
-let matchCursor=0;
-let allHistory=[];    // [{round, matches:[...]}]
-let beltLog=[];       // [{round, beltName, beltLevel, defender, challenger, winner, changed, newClaim}]
-let roundActive=false;
-let promoActive=false;
-let phase='idle';
-let expansionMsg='';
+let allTeams=[];        // [{name,comunidad,provincia,value,startValue}]
+let tournaments=[];     // [{id,hostIdx,tier,label,css,teamCount,days,startDay,teams:[],bracket:[],results:{},winner,runnerUp,third,fourth,complete}]
+let calendar=[];        // day 1-365 → [tournamentIds active that day]
+let currentDay=0;       // 0 = not started, 1-365
+let points={};          // {teamIdx: totalPoints}
+let teamStats={};       // {teamIdx: {played,wins,losses,tourneys,tourneysPlayed}}
+let seasonComplete=false;
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 function fmt(n){return n.toLocaleString('es-ES')}
-// Global ranking: D1 positions first, then D2 teams interleaved by value
-function globalRanked(){
-  // D1 teams in their ranking order, then D2 teams sorted by value
-  const d2All=[...d2nRankings,...d2sRankings].sort((a,b)=>teams[b].value-teams[a].value);
-  return [...d1Rankings,...d2All];
-}
-function globalRank(tIdx){
-  const gr=globalRanked();
-  const p=gr.indexOf(tIdx);return p===-1?999:p+1;
-}
-function divOf(tIdx){return teams[tIdx].division}
-function divRankings(div){return div==='d2n'?d2nRankings:div==='d2s'?d2sRankings:d1Rankings}
-function divRankOf(tIdx){
-  const r=divRankings(divOf(tIdx));
-  const p=r.indexOf(tIdx);return p===-1?999:p+1;
-}
-function teamBeltsHTML(tIdx){
-  return belts.filter(b=>b.holder===tIdx).map(b=>`<span class="bb bb-${beltCSSLevel(b)}">🏆${b.name}</span>`).join('');
-}
-function beltCSSLevel(b){return b.level==='d2'?'d2':b.level}
-function divLabel(d){return d==='d1'?'D1':d==='d2n'?'D2N':d==='d2s'?'D2S':'?'}
+function randInt(a,b){return a+Math.floor(Math.random()*(b-a+1))}
 
 // ═══════════════════════════════════════════════════════════════
 // CSV
@@ -254,143 +174,196 @@ function parseCSV(text){
       if(!isNaN(val))rows.push({comunidad:c[0].replace(/"/g,''),provincia:c[1].replace(/"/g,''),name:c[2].replace(/"/g,''),value:val});
     }
   }
-  return rows;
+  return rows.sort((a,b)=>b.value-a.value);
 }
-async function fetchCSV(){
-  for(const url of CSV_URLS){
-    try{
-      const r=await fetch(url);
-      if(!r.ok)continue;
-      const t=await r.text();
-      const data=parseCSV(t);
-      if(data.length>0)return data;
-    }catch(e){console.warn('CSV fail:',url,e)}
+
+// ═══════════════════════════════════════════════════════════════
+// TIER CLASSIFICATION
+// ═══════════════════════════════════════════════════════════════
+function getTier(hostRank){
+  for(const[maxR,tc,days,label,css]of TIERS){
+    if(hostRank<=maxR)return{teamCount:tc,days,label,css};
   }
-  return null;
+  return{teamCount:16,days:4,label:'Level 8',css:'tier-lo'};
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BELTS
-// ═══════════════════════════════════════════════════════════════
-function beltSortKey(b,priority){
-  // priority = ['national','regional','provincial'] etc.
-  // Within each tier, use the priority order
-  const tierBase=(b.tier||1)-1;
-  let levelIdx=priority.indexOf(b.level==='d2'?'national':b.level);
-  if(levelIdx===-1)levelIdx=99;
-  return tierBase*10+levelIdx;
-}
+function isTop12(t){return t.label==='Grand Slam'||t.label==='Level 2'}
 
-function autoCreateBelts(){
-  const coms={},provs={};
-  teams.forEach((t,i)=>{
-    if(!coms[t.comunidad])coms[t.comunidad]=[];
-    coms[t.comunidad].push(i);
-    if(!provs[t.provincia])provs[t.provincia]=[];
-    provs[t.provincia].push(i);
+// ═══════════════════════════════════════════════════════════════
+// CALENDAR GENERATION
+// ═══════════════════════════════════════════════════════════════
+function buildCalendar(){
+  calendar=Array.from({length:SEASON_DAYS+1},()=>[]);
+
+  // 1) Place Top 12 tournaments (no overlap, 7-day cooling, spread across season)
+  const top12=tournaments.filter(t=>isTop12(t));
+  const spacing=Math.floor(SEASON_DAYS/(top12.length+1));
+  let nextAvail=spacing;
+  // Interleave GS and L2: GS1, L2-1, L2-2, GS2, L2-3, L2-4, GS3, L2-5, L2-6, GS4, L2-7, L2-8
+  const gs=top12.filter(t=>t.label==='Grand Slam');
+  const l2=top12.filter(t=>t.label==='Level 2');
+  const ordered=[];
+  let gi=0,li=0;
+  for(let i=0;i<12;i++){
+    if(i%3===0&&gi<gs.length)ordered.push(gs[gi++]);
+    else if(li<l2.length)ordered.push(l2[li++]);
+    else if(gi<gs.length)ordered.push(gs[gi++]);
+  }
+
+  nextAvail=14; // start after 2 weeks
+  ordered.forEach(t=>{
+    t.startDay=nextAvail;
+    for(let d=0;d<t.days;d++)calendar[nextAvail+d].push(t.id);
+    nextAvail+=t.days+TOP12_COOLING;
   });
-  for(const[com,idxs]of Object.entries(coms)){
-    if(idxs.length>=2){
-      const id='regional_'+com.toLowerCase().replace(/[^a-z0-9]/g,'_');
-      if(!belts.find(b=>b.id===id))belts.push({id,level:'regional',tier:1,name:com,holder:null,scope:com,scopeType:'comunidad',defenses:0,changes:0});
-    }
-  }
-  for(const[prov,idxs]of Object.entries(provs)){
-    if(idxs.length>=2){
-      const id='provincial_'+prov.toLowerCase().replace(/[^a-z0-9]/g,'_');
-      if(!belts.find(b=>b.id===id))belts.push({id,level:'provincial',tier:1,name:prov+' (Prov.)',holder:null,scope:prov,scopeType:'provincia',defenses:0,changes:0});
-    }
-  }
-}
 
-function isEligibleForBelt(tIdx,belt){
-  const t=teams[tIdx];
-  if(belt.level==='national')return t.division==='d1';
-  if(belt.level==='d2'){
-    if(belt.scope==='north')return t.division==='d2n';
-    if(belt.scope==='south')return t.division==='d2s';
-  }
-  if(belt.scopeType==='comunidad')return t.comunidad===belt.scope;
-  if(belt.scopeType==='provincia')return t.provincia===belt.scope;
-  return false;
-}
+  // 2) Place remaining tournaments, avoiding same-province overlap, spreading evenly
+  const rest=tournaments.filter(t=>!isTop12(t));
+  // Shuffle to avoid patterns, then sort by tier (higher tiers earlier)
+  rest.sort((a,b)=>{
+    const ta=TIERS.findIndex(([mr])=>a.hostIdx<mr);
+    const tb=TIERS.findIndex(([mr])=>b.hostIdx<mr);
+    return ta-tb||Math.random()-0.5;
+  });
 
-// ═══════════════════════════════════════════════════════════════
-// COOLDOWN
-// ═══════════════════════════════════════════════════════════════
-function onCooldown(a,b){
-  const minR=roundNum-COOLDOWN;
-  return matchHistory.some(h=>h.round>minR&&((h.a===a&&h.b===b)||(h.a===b&&h.b===a)));
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MATCHUP GENERATION
-// ═══════════════════════════════════════════════════════════════
-function generateMatchups(forRound){
-  const rnd=forRound||roundNum+1;
-  const priority=getRoundPriority(rnd);
-  const allByRank=globalRanked();
-  const paired=new Set();
-  const matchups=[];
-
-  // Sort belts by this round's priority
-  const sortedBelts=[...belts].sort((a,b)=>beltSortKey(a,priority)-beltSortKey(b,priority));
-
-  // 1) Held belts — defense
-  for(const belt of sortedBelts){
-    if(belt.holder===null||paired.has(belt.holder))continue;
-    let challenger=null;
-    for(const tIdx of allByRank){
-      if(tIdx===belt.holder||paired.has(tIdx))continue;
-      if(!isEligibleForBelt(tIdx,belt))continue;
-      if(onCooldown(belt.holder,tIdx))continue;
-      challenger=tIdx;break;
-    }
-    if(challenger!==null){
-      matchups.push({homeIdx:belt.holder,awayIdx:challenger,beltId:belt.id});
-      paired.add(belt.holder);paired.add(challenger);
-    }
-  }
-
-  // 2) Unclaimed belts — best 2 eligible
-  for(const belt of sortedBelts){
-    if(belt.holder!==null)continue;
-    const eligible=allByRank.filter(i=>isEligibleForBelt(i,belt)&&!paired.has(i));
-    if(eligible.length>=2&&!onCooldown(eligible[0],eligible[1])){
-      matchups.push({homeIdx:eligible[0],awayIdx:eligible[1],beltId:belt.id});
-      paired.add(eligible[0]);paired.add(eligible[1]);
-    }
-  }
-
-  // 3) Remaining by global rank — cross-division OK
-  const unpaired=allByRank.filter(i=>!paired.has(i));
-  const used=new Set();
-  for(let i=0;i<unpaired.length;i++){
-    if(used.has(unpaired[i]))continue;
-    for(let j=i+1;j<unpaired.length;j++){
-      if(used.has(unpaired[j]))continue;
-      if(!onCooldown(unpaired[i],unpaired[j])){
-        matchups.push({homeIdx:unpaired[i],awayIdx:unpaired[j],beltId:null});
-        used.add(unpaired[i]);used.add(unpaired[j]);break;
+  rest.forEach(t=>{
+    let bestDay=1,bestScore=Infinity;
+    // Try each possible start day, pick the one with least conflicts
+    for(let d=1;d<=SEASON_DAYS-t.days+1;d++){
+      // Can't overlap with top 12 cooling periods
+      let blocked=false;
+      for(let dd=0;dd<t.days;dd++){
+        const dayTourns=calendar[d+dd];
+        // Check if any top12 is running or cooling
+        if(dayTourns.some(tid=>{const ot=tournaments[tid];return isTop12(ot)})){blocked=true;break}
       }
+      if(blocked)continue;
+
+      // Score: penalize same-province/comunidad overlap, prefer even distribution
+      let score=0;
+      for(let dd=0;dd<t.days;dd++){
+        calendar[d+dd].forEach(tid=>{
+          const ot=tournaments[tid];
+          if(allTeams[ot.hostIdx].provincia===allTeams[t.hostIdx].provincia)score+=100;
+          else if(allTeams[ot.hostIdx].comunidad===allTeams[t.hostIdx].comunidad)score+=30;
+          score+=1; // slight penalty for busy days
+        });
+      }
+      if(score<bestScore){bestScore=score;bestDay=d}
     }
+    t.startDay=bestDay;
+    for(let d=0;d<t.days;d++)calendar[bestDay+d].push(t.id);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEAM SELECTION FOR TOURNAMENTS
+// ═══════════════════════════════════════════════════════════════
+function getRankedTeams(){
+  return allTeams.map((_,i)=>i).sort((a,b)=>(points[b]||0)-(points[a]||0)||allTeams[b].value-allTeams[a].value);
+}
+
+function selectTeams(tourn){
+  const host=allTeams[tourn.hostIdx];
+  const ranked=getRankedTeams();
+  const n=tourn.teamCount;
+
+  // Check availability: team can't be in another active tournament
+  function isAvail(tIdx){
+    if(!teamStats[tIdx])teamStats[tIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
+    return teamStats[tIdx].busyUntil<tourn.startDay;
   }
 
-  // Sort bottom-to-top: best team's global rank descending (worse = first)
-  matchups.sort((a,b)=>{
-    const aBest=Math.min(globalRank(a.homeIdx),globalRank(a.awayIdx));
-    const bBest=Math.min(globalRank(b.homeIdx),globalRank(b.awayIdx));
-    return bBest-aBest;
+  // For top 12: check cooling — team must not be in a tournament ending within 7 days before
+  function isAvailTop12(tIdx){
+    if(!isAvail(tIdx))return false;
+    // Also check if team has a tournament ending within cooling period before this one
+    const coolStart=tourn.startDay-TOP12_COOLING;
+    return(teamStats[tIdx].busyUntil||0)<=coolStart;
+  }
+
+  const availFn=isTop12(tourn)?isAvailTop12:isAvail;
+  const selected=new Set();
+  selected.add(tourn.hostIdx); // host always participates
+
+  if(tourn.label==='Grand Slam'){
+    // Top 32 ranked available teams
+    for(const tIdx of ranked){
+      if(selected.size>=n)break;
+      if(!selected.has(tIdx)&&availFn(tIdx))selected.add(tIdx);
+    }
+  }else if(tourn.label==='Level 2'){
+    // Top 24 available + 8 regional invites
+    let mainCount=0;
+    for(const tIdx of ranked){
+      if(selected.size>=n)break;
+      if(mainCount>=24)break;
+      if(!selected.has(tIdx)&&availFn(tIdx)){selected.add(tIdx);mainCount++}
+    }
+    // Regional invites: teams from host's comunidad not yet selected
+    const regional=ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!selected.has(i)&&availFn(i));
+    regional.forEach(tIdx=>{if(selected.size<n)selected.add(tIdx)});
+    // Fill remaining with any available
+    for(const tIdx of ranked){
+      if(selected.size>=n)break;
+      if(!selected.has(tIdx)&&availFn(tIdx))selected.add(tIdx);
+    }
+  }else{
+    // 8 local (same provincia/comunidad) + 8 random (fewest tournaments, with region affinity)
+    const local=ranked.filter(i=>
+      (allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad)
+      &&!selected.has(i)&&isAvail(i)
+    );
+    local.slice(0,7).forEach(tIdx=>selected.add(tIdx)); // 7 + host = 8 local
+
+    // Random: sort by fewest tourneys played, with affinity for region
+    const candidates=ranked.filter(i=>!selected.has(i)&&isAvail(i));
+    candidates.sort((a,b)=>{
+      const sa=teamStats[a]?.tourneysPlayed||0,sb=teamStats[b]?.tourneysPlayed||0;
+      if(sa!==sb)return sa-sb;
+      // Affinity: same region teams get slight priority
+      const aa=allTeams[a].comunidad===host.comunidad?-1:0;
+      const ab=allTeams[b].comunidad===host.comunidad?-1:0;
+      return aa-ab||Math.random()-0.5;
+    });
+    candidates.slice(0,n-selected.size).forEach(tIdx=>selected.add(tIdx));
+  }
+
+  // Convert to array, seed by ranking (best ranked = seed 1)
+  const teamArr=[...selected];
+  teamArr.sort((a,b)=>(points[b]||0)-(points[a]||0)||allTeams[b].value-allTeams[a].value);
+
+  // Mark teams as busy
+  teamArr.forEach(tIdx=>{
+    if(!teamStats[tIdx])teamStats[tIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
+    teamStats[tIdx].busyUntil=tourn.startDay+tourn.days-1;
+    teamStats[tIdx].tourneysPlayed++;
   });
 
-  return matchups;
+  tourn.teams=teamArr;
+  // Build seeded bracket (1v16, 8v9, 5v12, 4v13, etc.)
+  tourn.bracket=buildBracket(teamArr);
+}
+
+function buildBracket(teams){
+  const n=teams.length;
+  // Standard seeding for elimination bracket
+  if(n===32){
+    const seeds=[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,23,3,30,14,19,6,27,11,22];
+    return seeds.map(s=>teams[s-1]!==undefined?teams[s-1]:null);
+  }
+  if(n===16){
+    const seeds=[1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11];
+    return seeds.map(s=>teams[s-1]!==undefined?teams[s-1]:null);
+  }
+  return teams;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // MATCH ENGINE
 // ═══════════════════════════════════════════════════════════════
 function simulateMatch(idx1,idx2){
-  const t1=teams[idx1],t2=teams[idx2];
+  const t1=allTeams[idx1],t2=allTeams[idx2];
   const best=Math.max(t1.value,t2.value),worst=Math.min(t1.value,t2.value);
   const ratio=worst/best;
   const threshold=Math.floor(ratio*100);
@@ -400,264 +373,191 @@ function simulateMatch(idx1,idx2){
   const worstIdx=t1.value>=t2.value?idx2:idx1;
   const winnerIdx=worstWins?worstIdx:bestIdx;
   const loserIdx=winnerIdx===idx1?idx2:idx1;
-  const preVal1=t1.value,preVal2=t2.value;
+  // Steal
   let stolen=0,stealBlocked=false;
-  const lr=teams[loserIdx].value/teams[winnerIdx].value;
-  if(lr>0.5){stolen=Math.round(teams[loserIdx].value*0.1);teams[winnerIdx].value+=stolen;teams[loserIdx].value-=stolen}
-  else{stealBlocked=true}
-  teams[winnerIdx].wins++;teams[loserIdx].losses++;
-  return{idx1,idx2,name1:t1.name,name2:t2.name,preVal1,preVal2,winnerIdx,loserIdx,winnerName:teams[winnerIdx].name,loserName:teams[loserIdx].name,roll,threshold,ratio,worstWins,stolen,stealBlocked};
+  const lr=allTeams[loserIdx].value/allTeams[winnerIdx].value;
+  if(lr>0.5){stolen=Math.round(allTeams[loserIdx].value*0.1);allTeams[winnerIdx].value+=stolen;allTeams[loserIdx].value-=stolen}
+  else stealBlocked=true;
+  // Stats
+  if(!teamStats[winnerIdx])teamStats[winnerIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
+  if(!teamStats[loserIdx])teamStats[loserIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
+  teamStats[winnerIdx].played++;teamStats[winnerIdx].wins++;
+  teamStats[loserIdx].played++;teamStats[loserIdx].losses++;
+  return{idx1,idx2,winnerIdx,loserIdx,roll,threshold,worstWins,stolen,stealBlocked,
+    name1:t1.name,name2:t2.name,winnerName:allTeams[winnerIdx].name,loserName:allTeams[loserIdx].name};
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RANKING MOVEMENT
+// TOURNAMENT ROUND SIM
 // ═══════════════════════════════════════════════════════════════
-function applyRankMove(winnerIdx,loserIdx){
-  const moves=[];
-  const lDiv=divOf(loserIdx),lR=divRankings(lDiv),lp=lR.indexOf(loserIdx);
-  if(lp>=0&&lp<lR.length-1){
-    const d=lR[lp+1];lR[lp]=d;lR[lp+1]=loserIdx;
-    moves.push({team:teams[loserIdx].name,from:lp+1,to:lp+2,dir:'down',div:lDiv});
-    moves.push({team:teams[d].name,from:lp+2,to:lp+1,dir:'up',div:lDiv});
-  }else if(lp>=0){moves.push({team:teams[loserIdx].name,from:lp+1,to:lp+1,dir:'stay',div:lDiv})}
-  const wDiv=divOf(winnerIdx),wR=divRankings(wDiv),wp=wR.indexOf(winnerIdx);
-  if(wp>0){
-    const d=wR[wp-1];wR[wp]=d;wR[wp-1]=winnerIdx;
-    moves.push({team:teams[winnerIdx].name,from:wp+1,to:wp,dir:'up',div:wDiv});
-    moves.push({team:teams[d].name,from:wp,to:wp+1,dir:'down',div:wDiv});
-  }else if(wp===0){moves.push({team:teams[winnerIdx].name,from:1,to:1,dir:'stay',div:wDiv})}
-  return moves;
+function getTournamentRound(tourn){
+  // How many rounds completed?
+  const totalRounds=tourn.teamCount===32?5:4;
+  const roundsDone=Object.keys(tourn.results).length;
+  return roundsDone; // 0-indexed
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPANSION
-// ═══════════════════════════════════════════════════════════════
-async function checkExpansion(){
-  expansionMsg='Fetching...';renderAll();
-  const csvData=await fetchCSV();
-  if(!csvData){expansionMsg='⚠️ Could not fetch Google Sheet. Check it\'s published.';phase='idle';renderAll();return}
-  const newRows=csvData.filter(row=>!teams.find(t=>t.name===row.name));
-  if(newRows.length===0){expansionMsg='No new teams found.';phase='idle';renderAll();return}
-  // Only take the next 4 teams (expansion is always 4)
-  const batch=newRows.slice(0,4);
-  batch.forEach(row=>{
-    teams.push({name:row.name,comunidad:row.comunidad,provincia:row.provincia,value:row.value,startValue:row.value,wins:0,losses:0,division:'unassigned'});
-  });
-  autoCreateBelts();
-  const remaining=newRows.length-batch.length;
-  expansionMsg=`📦 ${batch.length} new: ${batch.map(r=>r.name).join(', ')}. Assign groups.${remaining>0?' ('+remaining+' more available next expansion)':''}`;
-  phase='assign_groups';saveState();renderAll();
-}
+function simTournamentDay(tourn){
+  const roundIdx=getTournamentRound(tourn);
+  const n=tourn.teamCount;
+  const totalRounds=n===32?5:4;
+  if(roundIdx>=totalRounds)return; // already done
 
-function assignTeam(tIdx,group){
-  const prev=teams[tIdx].division;
-  if(prev==='d2n')d2nRankings=d2nRankings.filter(i=>i!==tIdx);
-  if(prev==='d2s')d2sRankings=d2sRankings.filter(i=>i!==tIdx);
-  teams[tIdx].division=group;
-  if(group==='d2n'&&!d2nRankings.includes(tIdx)){d2nRankings.push(tIdx);d2nRankings.sort((a,b)=>teams[b].value-teams[a].value)}
-  if(group==='d2s'&&!d2sRankings.includes(tIdx)){d2sRankings.push(tIdx);d2sRankings.sort((a,b)=>teams[b].value-teams[a].value)}
-  if(d2nRankings.length>=2&&!belts.find(b=>b.id==='d2_north'))belts.push({id:'d2_north',level:'d2',tier:2,name:'D2 North',holder:null,scope:'north',scopeType:'d2',defenses:0,changes:0});
-  if(d2sRankings.length>=2&&!belts.find(b=>b.id==='d2_south'))belts.push({id:'d2_south',level:'d2',tier:2,name:'D2 South',holder:null,scope:'south',scopeType:'d2',defenses:0,changes:0});
-  autoCreateBelts();saveState();renderAll();
-}
-function cycleTeamGroup(tIdx){
-  const d=teams[tIdx].division;
-  if(d==='unassigned')assignTeam(tIdx,'d2n');
-  else if(d==='d2n'){d2nRankings=d2nRankings.filter(i=>i!==tIdx);assignTeam(tIdx,'d2s')}
-  else if(d==='d2s'){d2sRankings=d2sRankings.filter(i=>i!==tIdx);teams[tIdx].division='unassigned';saveState();renderAll()}
-}
-function finishGroups(){
-  if(teams.some(t=>t.division==='unassigned'))return;
-  phase='idle';expansionMsg='';promoRelegMsg='';saveState();renderAll();
-}
-function finishPromoGroups(){
-  if(teams.some(t=>t.division==='unassigned'))return;
-  phase='post_round';promoRelegMsg='';saveState();renderAll();
-}
+  // Get current alive teams from bracket progression
+  let alive=tourn.bracket.filter(t=>t!==null);
+  // Apply previous results to narrow down
+  for(let r=0;r<roundIdx;r++){
+    const rr=tourn.results[r];
+    if(rr)alive=rr.map(m=>m.winnerIdx);
+  }
 
-// ═══════════════════════════════════════════════════════════════
-// PROMO/RELEG
-// ═══════════════════════════════════════════════════════════════
-function doPromoReleg(){
-  if(d2nRankings.length===0&&d2sRankings.length===0)return{promoted:[],relegated:[],msgs:[]};
-  const msgs=[];
+  const roundName=roundIdx===totalRounds-1?'Final':roundIdx===totalRounds-2?'Semifinal':roundIdx===totalRounds-3?'Quarterfinal':'Round '+(roundIdx+1);
 
-  // 1) Promote D2N #1 and D2S #1 into D1
-  const promoted=[];
-  const promoN=d2nRankings.length>0?d2nRankings[0]:null;
-  const promoS=d2sRankings.length>0?d2sRankings[0]:null;
-  [promoN,promoS].forEach(tIdx=>{
-    if(tIdx===null)return;
-    const pd=teams[tIdx].division;
-    if(pd==='d2n')d2nRankings=d2nRankings.filter(i=>i!==tIdx);
-    if(pd==='d2s')d2sRankings=d2sRankings.filter(i=>i!==tIdx);
-    teams[tIdx].division='d1';
-    promoted.push(tIdx);
-    msgs.push(`▲ ${teams[tIdx].name} promoted to D1`);
-  });
+  // Pair up
+  const matches=[];
+  for(let i=0;i<alive.length;i+=2){
+    if(i+1<alive.length){
+      matches.push(simulateMatch(alive[i],alive[i+1]));
+    }
+  }
 
-  // 2) Relegate D1 bottom 2 → 'unassigned' (user assigns group)
-  const relegated=[];
-  if(d1Rankings.length>=2){
-    const rel1=d1Rankings[d1Rankings.length-1];
-    const rel2=d1Rankings[d1Rankings.length-2];
-    [rel2,rel1].forEach(tIdx=>{
-      d1Rankings=d1Rankings.filter(i=>i!==tIdx);
-      teams[tIdx].division='unassigned';
-      relegated.push(tIdx);
-      msgs.push(`▼ ${teams[tIdx].name} relegated from D1`);
+  tourn.results[roundIdx]={matches,roundName};
+
+  // Bronze match: after semifinals (round totalRounds-2), the two losers play
+  if(roundIdx===totalRounds-2){
+    const sfLosers=matches.map(m=>m.loserIdx);
+    if(sfLosers.length===2){
+      const bronze=simulateMatch(sfLosers[0],sfLosers[1]);
+      tourn.results['bronze']={matches:[bronze],roundName:'Bronze Match'};
+      tourn.third=bronze.winnerIdx;
+      tourn.fourth=bronze.loserIdx;
+    }
+  }
+
+  // After final
+  if(roundIdx===totalRounds-1&&matches.length>0){
+    tourn.winner=matches[0].winnerIdx;
+    tourn.runnerUp=matches[0].loserIdx;
+    tourn.complete=true;
+    awardPoints(tourn);
+    // Free eliminated teams
+    tourn.teams.forEach(tIdx=>{
+      if(teamStats[tIdx])teamStats[tIdx].busyUntil=0;
     });
   }
+}
 
-  // 3) Insert promoted into D1, sorted by value (tie-break)
-  promoted.sort((a,b)=>teams[b].value-teams[a].value);
-  promoted.forEach(tIdx=>{
-    let inserted=false;
-    for(let i=0;i<d1Rankings.length;i++){
-      if(teams[tIdx].value>teams[d1Rankings[i]].value){
-        d1Rankings.splice(i,0,tIdx);inserted=true;break;
+// ═══════════════════════════════════════════════════════════════
+// POINTS
+// ═══════════════════════════════════════════════════════════════
+function awardPoints(tourn){
+  const pts=POINTS[tourn.label]||[10,5,3,2,1,0];
+  if(tourn.winner!=null){points[tourn.winner]=(points[tourn.winner]||0)+pts[0]}
+  if(tourn.runnerUp!=null){points[tourn.runnerUp]=(points[tourn.runnerUp]||0)+pts[1]}
+  if(tourn.third!=null){points[tourn.third]=(points[tourn.third]||0)+pts[2]}
+  if(tourn.fourth!=null){points[tourn.fourth]=(points[tourn.fourth]||0)+pts[3]}
+  // QF losers (round totalRounds-3)
+  const totalR=tourn.teamCount===32?5:4;
+  const qfRound=tourn.results[totalR-3];
+  if(qfRound){
+    qfRound.matches.forEach(m=>{
+      if(m.loserIdx!==tourn.third&&m.loserIdx!==tourn.fourth){
+        points[m.loserIdx]=(points[m.loserIdx]||0)+pts[4];
       }
+    });
+  }
+  // R16 losers (only for 32-team)
+  if(tourn.teamCount===32){
+    const r16=tourn.results[0];
+    if(r16){r16.matches.forEach(m=>{points[m.loserIdx]=(points[m.loserIdx]||0)+pts[5]})}
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEASON SIM
+// ═══════════════════════════════════════════════════════════════
+function advanceDay(){
+  if(currentDay>=SEASON_DAYS){seasonComplete=true;return}
+  currentDay++;
+  const todayTournIds=calendar[currentDay]||[];
+
+  todayTournIds.forEach(tid=>{
+    const t=tournaments[tid];
+    if(t.complete)return;
+    // If tournament hasn't started yet (first day), select teams
+    if(!t.teams||t.teams.length===0){
+      selectTeams(t);
     }
-    if(!inserted)d1Rankings.push(tIdx);
+    // Sim one round
+    simTournamentDay(t);
   });
 
-  promoRelegMsg=msgs.join(' · ');
+  if(currentDay>=SEASON_DAYS)seasonComplete=true;
   saveState();
-  return{promoted,relegated,msgs};
-}
-let promoRelegMsg='';
-
-// ═══════════════════════════════════════════════════════════════
-// ROUND FLOW
-// ═══════════════════════════════════════════════════════════════
-function prepareRound(){
-  roundNum++;
-  curMatchups=generateMatchups(roundNum);
-  curResults=[];matchCursor=0;roundActive=true;phase='in_round';saveState();renderAll();
 }
 
-function playNext(){
-  if(!roundActive||matchCursor>=curMatchups.length)return;
-  const mu=curMatchups[matchCursor];
-  const res=simulateMatch(mu.homeIdx,mu.awayIdx);
-  res.beltId=mu.beltId;
+function advanceDays(n){for(let i=0;i<n&&!seasonComplete;i++)advanceDay()}
 
-  // Belt transfer — only the specific belt at stake
-  if(mu.beltId){
-    const belt=belts.find(b=>b.id===mu.beltId);
-    if(belt){
-      const wasHolder=belt.holder;
-      const isNewClaim=wasHolder===null;
-      belt.holder=res.winnerIdx;
-      const changed=!isNewClaim&&wasHolder!==res.winnerIdx;
-      if(!isNewClaim&&!changed)belt.defenses=(belt.defenses||0)+1;
-      if(changed)belt.changes=(belt.changes||0)+1;
-      res.beltWon=true;res.beltName=belt.name;res.beltLevel=belt.level;res.beltChanged=changed;res.beltNewClaim=isNewClaim;
-
-      beltLog.push({
-        round:roundNum,
-        beltName:belt.name,beltLevel:belt.level,beltId:belt.id,
-        defender:isNewClaim?null:teams[wasHolder].name,
-        challenger:isNewClaim?null:teams[wasHolder===res.winnerIdx?res.loserIdx:res.winnerIdx].name,
-        team1:res.name1,team2:res.name2,
-        winner:res.winnerName,
-        changed,newClaim:isNewClaim,
-      });
-    }
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function initSeason(){
+  document.getElementById('h-info').textContent='Fetching teams...';
+  let csvData;
+  try{
+    const r=await fetch(CSV_URL);
+    const text=await r.text();
+    csvData=parseCSV(text);
+  }catch(e){
+    document.getElementById('h-info').textContent='⚠️ Could not fetch teams. Check connection.';
+    return;
   }
-
-  res.preWRank=divRankOf(res.winnerIdx);res.preLRank=divRankOf(res.loserIdx);
-  res.rankMoves=applyRankMove(res.winnerIdx,res.loserIdx);
-  res.postWRank=divRankOf(res.winnerIdx);res.postLRank=divRankOf(res.loserIdx);
-  res.wDiv=divOf(res.winnerIdx);res.lDiv=divOf(res.loserIdx);
-
-  matchHistory.push({round:roundNum,a:mu.homeIdx,b:mu.awayIdx});
-  curResults.push(res);matchCursor++;
-
-  if(matchCursor>=curMatchups.length){
-    roundActive=false;
-    allHistory.push({round:roundNum,matches:[...curResults],priority:getRoundPriority(roundNum)});
-    // Auto promo/releg after round completes whenever D2 groups exist
-    if(d2nRankings.length>0||d2sRankings.length>0){
-      doPromoReleg();
-      phase='post_round_promo';
-    }else{
-      phase='post_round';
-      promoRelegMsg='';
-    }
+  if(!csvData||csvData.length<8){
+    document.getElementById('h-info').textContent='⚠️ Not enough teams in sheet ('+((csvData||[]).length)+')';
+    return;
   }
-  saveState();renderAll();
+  allTeams=csvData.map(t=>({...t,startValue:t.value}));
+
+  // Create tournaments
+  tournaments=allTeams.map((t,i)=>{
+    const tier=getTier(i+1);
+    return{id:i,hostIdx:i,tier:tier.label,label:tier.label,css:tier.css,
+      teamCount:tier.teamCount,days:tier.days,startDay:0,
+      teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false};
+  });
+
+  // Build calendar
+  buildCalendar();
+
+  // Reset state
+  currentDay=0;points={};teamStats={};seasonComplete=false;
+  document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments · Ready`;
+  saveState();
+  renderAll();
 }
 
-function simAll(){while(roundActive)playNext()}
+function resetSeason(){
+  localStorage.removeItem(SAVE_KEY);
+  initSeason();
+}
 
 // ═══════════════════════════════════════════════════════════════
-// PERSISTENCE — localStorage
+// PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-const SAVE_KEY='spain_is_pain_state';
-
 function saveState(){
   try{
-    const state={
-      teams,d1Rankings,d2nRankings,d2sRankings,belts,
-      roundNum,matchHistory,curMatchups,curResults,matchCursor,
-      allHistory,beltLog,roundActive,promoActive,phase,
-      expansionMsg,promoRelegMsg,
-    };
-    localStorage.setItem(SAVE_KEY,JSON.stringify(state));
-  }catch(e){console.warn('Save failed:',e)}
+    localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,points,teamStats,seasonComplete}));
+  }catch(e){console.warn('Save failed',e)}
 }
-
 function loadState(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
     if(!raw)return false;
     const s=JSON.parse(raw);
-    teams=s.teams||[];
-    d1Rankings=s.d1Rankings||[];
-    d2nRankings=s.d2nRankings||[];
-    d2sRankings=s.d2sRankings||[];
-    belts=s.belts||[];
-    roundNum=s.roundNum||0;
-    matchHistory=s.matchHistory||[];
-    curMatchups=s.curMatchups||[];
-    curResults=s.curResults||[];
-    matchCursor=s.matchCursor||0;
-    allHistory=s.allHistory||[];
-    beltLog=s.beltLog||[];
-    roundActive=s.roundActive||false;
-    promoActive=s.promoActive||false;
-    phase=s.phase||'idle';
-    expansionMsg=s.expansionMsg||'';
-    promoRelegMsg=s.promoRelegMsg||'';
-    return true;
-  }catch(e){console.warn('Load failed:',e);return false}
-}
-
-// ═══════════════════════════════════════════════════════════════
-// INIT — always 8 seed teams
-// ═══════════════════════════════════════════════════════════════
-const SEED=[
-  {name:'Madrid',comunidad:'Madrid',provincia:'Madrid',value:3506730},
-  {name:'Barcelona',comunidad:'Catalunya',provincia:'Barcelona',value:1731649},
-  {name:'Madrid II',comunidad:'Madrid',provincia:'Madrid',value:876683},
-  {name:'València',comunidad:'Com. Valenciana',provincia:'València',value:840792},
-  {name:'Zaragoza',comunidad:'Aragón',provincia:'Zaragoza',value:693091},
-  {name:'Sevilla',comunidad:'Andalucía',provincia:'Sevilla',value:689423},
-  {name:'Málaga',comunidad:'Andalucía',provincia:'Málaga',value:599063},
-  {name:'Murcia',comunidad:'Murcia',provincia:'Murcia',value:479405},
-];
-
-function initSeason(){
-  teams=SEED.map(t=>({...t,startValue:t.value,wins:0,losses:0,division:'d1'}));
-  d1Rankings=teams.map((_,i)=>i).sort((a,b)=>teams[b].value-teams[a].value);
-  d2nRankings=[];d2sRankings=[];
-  belts=[{id:'national_spain',level:'national',tier:1,name:'Spain 🇪🇸',holder:null,scope:'spain',scopeType:'national',defenses:0,changes:0}];
-  autoCreateBelts();
-  roundNum=0;matchHistory=[];curMatchups=[];curResults=[];matchCursor=0;
-  allHistory=[];beltLog=[];roundActive=false;promoActive=false;phase='idle';expansionMsg='';promoRelegMsg='';
-  localStorage.removeItem(SAVE_KEY);
-  renderAll();
+    allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];
+    currentDay=s.currentDay||0;points=s.points||{};teamStats=s.teamStats||{};seasonComplete=s.seasonComplete||false;
+    return allTeams.length>0;
+  }catch(e){return false}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -669,160 +569,139 @@ function showTab(id){
   document.getElementById('tab-'+id).classList.add('active');
   document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active');
 }
-function renderAll(){renderHeader();renderSim();renderRankings();renderBelts();renderTeams();renderGroups();renderBeltLog();renderHistory()}
-
-function renderHeader(){
-  const el=document.getElementById('header-info');
-  if(roundNum===0){el.textContent='Ready to start';return}
-  const p=getRoundPriority(roundNum);
-  const labels={national:'🏆 National',regional:'🔵 Regional',provincial:'🟣 Provincial'};
-  el.textContent=`Round ${roundNum} · Priority: ${p.map(x=>labels[x]||x).join(' → ')} · ${teams.length} teams`;
+function renderAll(){renderSeason();renderCalendar();renderRankings();renderTournaments();renderTeams();
+  document.getElementById('h-info').textContent=`Day ${currentDay}/${SEASON_DAYS} · ${allTeams.length} teams · ${tournaments.filter(t=>t.complete).length}/${tournaments.length} done`;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RENDER: SIM
+// RENDER: SEASON
 // ═══════════════════════════════════════════════════════════════
-function renderSim(){
-  const el=document.getElementById('tab-sim');
+function renderSeason(){
+  const el=document.getElementById('tab-season');
   let h='';
-  if(expansionMsg)h+=`<div class="banner banner-blue">${expansionMsg}</div>`;
 
   h+=`<div class="controls">`;
-  if(phase==='idle'){
-    h+=`<button class="btn" onclick="prepareRound()">Prepare Round ${roundNum+1}</button>`;
-    if(roundNum>0)h+=`<button class="btn btn-blue btn-sm" onclick="checkExpansion()">Check Expansion</button>`;
-  }else if(phase==='in_round'){
-    h+=`<button class="btn" onclick="playNext()">Play Next Match</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="simAll()">Sim All</button>`;
-  }else if(phase==='post_round'){
-    h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';saveState();renderAll()">Next Round</button>`;
-  }else if(phase==='post_round_promo'){
-    const un=teams.filter(t=>t.division==='unassigned').length;
-    if(un>0){
-      h+=`<button class="btn" onclick="showTab('groups')">Assign ${un} relegated team(s) to D2 groups →</button>`;
-    }else{
-      h+=`<button class="btn btn-blue" onclick="checkExpansion()">Check Expansion</button>`;
-      h+=`<button class="btn btn-outline btn-sm" onclick="phase='idle';expansionMsg='';promoRelegMsg='';saveState();renderAll()">Next Round</button>`;
-    }
-  }else if(phase==='assign_groups'){
-    const un=teams.filter(t=>t.division==='unassigned').length;
-    h+=`<button class="btn" onclick="finishGroups()" ${un?'disabled':''}>Confirm Groups${un?' ('+un+' left)':''}</button>`;
+  if(!seasonComplete){
+    h+=`<button class="btn" onclick="advanceDay();renderAll()">▶ Next Day</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="advanceDays(7);renderAll()">+7 Days</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="advanceDays(30);renderAll()">+30 Days</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="advanceDays(365);renderAll()">Sim All</button>`;
+  }else{
+    h+=`<div class="banner banner-gold">🏆 Season Complete!</div>`;
   }
-  h+=`<button class="btn btn-reset btn-sm" onclick="initSeason()" style="margin-left:auto">Reset Season</button>`;
+  h+=`<button class="btn btn-reset btn-sm" onclick="resetSeason()" style="margin-left:auto">Reset</button>`;
   h+=`</div>`;
 
-  if(phase==='assign_groups')h+=`<div class="banner banner-gold">Go to <b>D2 Groups</b> tab to assign new teams.</div>`;
-  if(phase==='post_round_promo'&&promoRelegMsg)h+=`<div class="banner banner-gold">${promoRelegMsg}${teams.some(t=>t.division==='unassigned')?' — Assign relegated teams in <b>D2 Groups</b> tab.':''}</div>`;
-
-  // Priority display
-  const nextRnd=roundActive?roundNum:roundNum+1;
-  const pri=getRoundPriority(nextRnd);
-  const priLabels={national:'🏆 National',regional:'🔵 Regional',provincial:'🟣 Provincial'};
-  h+=`<div class="round-header">
-    <h2>${roundActive||phase==='post_round'?'Round '+roundNum:'Preview — Round '+nextRnd}</h2>
-    <span class="priority-badge">Priority: ${pri.map(x=>priLabels[x]).join(' → ')}</span>
-    ${curMatchups.length?`<span class="round-badge">${curResults.length} / ${curMatchups.length}</span>`:''}
+  h+=`<div class="day-nav">
+    <h2>Day ${currentDay}</h2>
+    <span class="day-badge">${tournaments.filter(t=>t.complete).length} tournaments complete</span>
   </div>`;
 
-  const matchups=phase==='idle'&&roundNum===0?generateMatchups(1):curMatchups;
-  matchups.forEach((mu,i)=>{
-    const cardId=`match-${i}`;
-    h+=renderMatchCard(mu,curResults[i],roundActive&&i===matchCursor,cardId);
-  });
-  if(matchups.length===0)h+=`<p style="color:var(--muted)">No matchups to show.</p>`;
+  // Today's active tournaments
+  const todayIds=(calendar[currentDay]||[]);
+  const activeTourns=todayIds.map(id=>tournaments[id]).filter(t=>t&&t.teams&&t.teams.length>0);
 
-  // Inline group assignment for post_round_promo and assign_groups
-  if(phase==='post_round_promo'||phase==='assign_groups'){
-    h+=renderInlineGroups();
+  if(activeTourns.length>0){
+    h+=`<div class="section-title">Active Today (${activeTourns.length})</div>`;
+    activeTourns.forEach(t=>{h+=renderTournCard(t,true)});
+  }
+
+  // Recently completed
+  const recent=tournaments.filter(t=>t.complete&&t.startDay+t.days>=currentDay-3).slice(0,8);
+  if(recent.length){
+    h+=`<div class="section-title">Recently Completed</div>`;
+    recent.forEach(t=>{h+=renderTournCard(t,false)});
+  }
+
+  // Upcoming
+  const upcoming=tournaments.filter(t=>!t.complete&&t.startDay>currentDay&&t.startDay<=currentDay+7).slice(0,6);
+  if(upcoming.length){
+    h+=`<div class="section-title">Upcoming (next 7 days)</div>`;
+    upcoming.forEach(t=>{
+      h+=`<div class="tourn-card">
+        <div class="tourn-header">
+          <span class="tourn-name"><span class="tier-badge ${t.css}">${t.label}</span> ${allTeams[t.hostIdx].name}</span>
+          <span class="tourn-meta">Day ${t.startDay} · ${t.teamCount} teams · ${t.days}d</span>
+        </div>
+      </div>`;
+    });
   }
 
   el.innerHTML=h;
-
-  // Auto-scroll to latest result or current match
-  requestAnimationFrame(()=>{
-    const scrollTarget=roundActive?`match-${matchCursor}`:curResults.length>0?`match-${curResults.length-1}`:null;
-    if(scrollTarget){
-      const target=document.getElementById(scrollTarget);
-      if(target)target.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-  });
 }
 
-function renderInlineGroups(){
-  const un=teams.map((_,i)=>i).filter(i=>teams[i].division==='unassigned');
-  let h=`<div class="section-title">Assign Teams to D2 Groups</div>`;
-  if(un.length)h+=`<div class="banner banner-blue" style="margin-top:8px">Click to cycle: Unassigned → North → South → Unassigned</div>`;
-  if(un.length){
-    h+=`<div class="unassigned-pool"><h3>Unassigned (${un.length})</h3>`;
-    un.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name} <span style="color:var(--muted);font-size:.72rem">${t.comunidad}</span></span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ North</span></div>`});
+function renderTournCard(t,showLatest){
+  const host=allTeams[t.hostIdx];
+  const totalR=t.teamCount===32?5:4;
+  const roundsDone=Object.keys(t.results).filter(k=>k!=='bronze').length;
+  let h=`<div class="tourn-card ${t.complete?'done-t':'active-t'} fade-in">
+    <div class="tourn-header">
+      <span class="tourn-name"><span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
+      <span class="tourn-meta">${t.complete?'🏆 '+allTeams[t.winner].name:'R'+roundsDone+'/'+totalR} · Day ${t.startDay}</span>
+    </div>`;
+
+  // Show latest round results
+  if(showLatest||t.complete){
+    const lastRound=t.results[roundsDone-1]||t.results[totalR-1];
+    const bronze=t.results['bronze'];
+    h+=`<div class="tourn-body">`;
+    if(lastRound){
+      h+=`<div style="font-size:.7rem;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px">${lastRound.roundName}</div>`;
+      lastRound.matches.forEach(m=>{
+        h+=`<div class="match-line">
+          <span><span class="mw">${m.winnerName}</span> def. <span class="ml">${m.loserName}</span></span>
+          <span class="roll-info">${m.roll}/${m.threshold}${m.worstWins?' 🎲':''}${m.stealBlocked?'':' ±'+fmt(m.stolen)}</span>
+        </div>`;
+      });
+    }
+    if(bronze){
+      h+=`<div style="font-size:.7rem;color:var(--muted);margin:6px 0 4px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Bronze</div>`;
+      bronze.matches.forEach(m=>{
+        h+=`<div class="match-line"><span><span class="mw">${m.winnerName}</span> def. <span class="ml">${m.loserName}</span></span><span class="roll-info">${m.roll}/${m.threshold}</span></div>`;
+      });
+    }
+    if(t.complete){
+      const pts=POINTS[t.label]||[];
+      h+=`<div style="margin-top:8px;font-size:.72rem;color:var(--muted)">🥇 ${allTeams[t.winner].name} (+${pts[0]}) · 🥈 ${allTeams[t.runnerUp].name} (+${pts[1]})${t.third!=null?' · 🥉 '+allTeams[t.third].name+' (+'+pts[2]+')':''}</div>`;
+    }
     h+=`</div>`;
   }
-  h+=`<div class="group-columns"><div class="group-col north"><h3>D2 North (${d2nRankings.length})</h3>`;
-  d2nRankings.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name}</span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ South</span></div>`});
-  if(!d2nRankings.length)h+=`<p style="color:var(--muted);font-size:.8rem">Empty</p>`;
-  h+=`</div><div class="group-col south"><h3>D2 South (${d2sRankings.length})</h3>`;
-  d2sRankings.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name}</span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ Remove</span></div>`});
-  if(!d2sRankings.length)h+=`<p style="color:var(--muted);font-size:.8rem">Empty</p>`;
-  h+=`</div></div>`;
+  h+=`</div>`;
   return h;
 }
 
-function renderMatchCard(mu,res,isCur,cardId){
-  const belt=mu.beltId?belts.find(b=>b.id===mu.beltId):null;
-  const bClass=belt?'belt-'+beltCSSLevel(belt):'';
-
-  if(res){
-    const t1w=res.winnerIdx===mu.homeIdx;
-    const b1=teamBeltsHTML(mu.homeIdx),b2=teamBeltsHTML(mu.awayIdx);
-
-    return`<div class="match-card played fade-in" id="${cardId}">
-      ${belt?`<div class="match-belt-tag"><span class="belt-badge ${bClass}">🏆 ${belt.name} Belt${res.beltNewClaim?' — First Claim':res.beltChanged?' — TITLE CHANGE!':' — Defense'}</span></div>`:''}
-      <div class="match-row">
-        <div class="match-team"><div>
-          <div class="mname">${res.name1}${b1} ${t1w?'<span class="winner-tag">WIN</span>':'<span class="loser-tag">LOSS</span>'}</div>
-          <div class="mrank">${divLabel(divOf(mu.homeIdx))} #${mu.homeIdx===res.winnerIdx?res.preWRank:res.preLRank} → #${mu.homeIdx===res.winnerIdx?res.postWRank:res.postLRank}</div>
-          <div class="mval">${fmt(res.preVal1)} → ${fmt(teams[mu.homeIdx].value)}</div>
-        </div></div>
-        <div class="match-vs">vs</div>
-        <div class="match-team right"><div>
-          <div class="mname">${!t1w?'<span class="winner-tag">WIN</span> ':'<span class="loser-tag">LOSS</span> '}${res.name2}${b2}</div>
-          <div class="mrank">${divLabel(divOf(mu.awayIdx))} #${mu.awayIdx===res.winnerIdx?res.preWRank:res.preLRank} → #${mu.awayIdx===res.winnerIdx?res.postWRank:res.postLRank}</div>
-          <div class="mval">${fmt(res.preVal2)} → ${fmt(teams[mu.awayIdx].value)}</div>
-        </div></div>
-      </div>
-      <div class="match-details">
-        <span class="tag">Ratio: <b>${res.ratio.toFixed(4)}</b></span>
-        <span class="tag">Thr: <b>${res.threshold}/200</b></span>
-        <span class="tag">Roll: <b>${res.roll}</b></span>
-        <span class="tag">${res.worstWins?'🎲 Upset!':'📊 Favored'}</span>
-        <span class="tag">${res.stealBlocked?'<i>No steal (≤50%)</i>':'<span style="color:var(--orange)">Stole '+fmt(res.stolen)+'</span>'}</span>
-        ${res.beltWon&&res.beltChanged?'<span class="tag" style="color:var(--red-bright)">🏆 TITLE CHANGE — '+res.winnerName+' takes '+res.beltName+'</span>':''}
-        ${res.beltWon&&!res.beltChanged&&!res.beltNewClaim?'<span class="tag" style="color:var(--green)">🏆 '+res.winnerName+' defends '+res.beltName+'</span>':''}
-        ${res.beltNewClaim?'<span class="tag" style="color:var(--gold)">🏆 '+res.winnerName+' claims '+res.beltName+'</span>':''}
-      </div>
-      <div class="rank-move">${res.rankMoves.map(m=>m.dir==='up'?`<span class="mv-up">▲ ${m.team} ${divLabel(m.div)}#${m.from}→#${m.to}</span>`:m.dir==='down'?`<span class="mv-down">▼ ${m.team} ${divLabel(m.div)}#${m.from}→#${m.to}</span>`:`<span class="mv-neutral">— ${m.team} ${divLabel(m.div)}#${m.from}</span>`).join(' · ')}</div>
-    </div>`;
+// ═══════════════════════════════════════════════════════════════
+// RENDER: CALENDAR
+// ═══════════════════════════════════════════════════════════════
+function renderCalendar(){
+  const el=document.getElementById('tab-calendar');
+  let h=`<div class="section-title">Season Calendar · ${SEASON_DAYS} days</div>`;
+  h+=`<div class="cal-grid">`;
+  for(let d=1;d<=SEASON_DAYS;d++){
+    const tIds=calendar[d]||[];
+    const hasTop12=tIds.some(id=>isTop12(tournaments[id]));
+    const cls=d===currentDay?'today ':'';
+    const cls2=tIds.length===0?'empty':hasTop12?'top12':'has-t';
+    h+=`<div class="cal-cell ${cls}${cls2}" title="Day ${d}: ${tIds.length} tournaments">${tIds.length||''}</div>`;
   }
+  h+=`</div>`;
 
-  const t1=teams[mu.homeIdx],t2=teams[mu.awayIdx];
-  return`<div class="match-card${isCur?' current':''}" id="${cardId}">
-    ${belt?`<div class="match-belt-tag"><span class="belt-badge ${bClass}">🏆 ${belt.name} Belt</span></div>`:''}
-    <div class="match-row">
-      <div class="match-team"><div>
-        <div class="mname">${t1.name}${teamBeltsHTML(mu.homeIdx)}</div>
-        <div class="mrank">${divLabel(divOf(mu.homeIdx))} #${divRankOf(mu.homeIdx)} · G#${globalRank(mu.homeIdx)}</div>
-        <div class="mval">${fmt(t1.value)}</div>
-      </div></div>
-      <div class="match-vs">${isCur?'<span style="color:var(--gold)">NEXT</span>':'vs'}</div>
-      <div class="match-team right"><div>
-        <div class="mname">${t2.name}${teamBeltsHTML(mu.awayIdx)}</div>
-        <div class="mrank">${divLabel(divOf(mu.awayIdx))} #${divRankOf(mu.awayIdx)} · G#${globalRank(mu.awayIdx)}</div>
-        <div class="mval">${fmt(t2.value)}</div>
-      </div></div>
-    </div>
-    ${isCur?'<div style="padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:8px"><button class="btn btn-sm" onclick="playNext()">▶ Play Match</button><button class="btn btn-outline btn-sm" onclick="simAll()">Sim All Remaining</button></div>':''}
+  // Legend
+  h+=`<div style="display:flex;gap:16px;margin-top:12px;font-size:.7rem;color:var(--muted)">
+    <span>⬜ Empty</span><span style="color:var(--muted)">▪ Active</span><span style="color:var(--gold)">▪ Top 12</span><span>🔲 Today</span>
   </div>`;
+
+  // Top 12 schedule
+  h+=`<div class="section-title">Top 12 Schedule</div>`;
+  const top12=tournaments.filter(t=>isTop12(t)).sort((a,b)=>a.startDay-b.startDay);
+  top12.forEach(t=>{
+    h+=`<div style="font-size:.8rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
+      <span class="tier-badge ${t.css}" style="margin-right:6px">${t.label}</span>
+      <b>${allTeams[t.hostIdx].name}</b> · Day ${t.startDay}–${t.startDay+t.days-1}
+      ${t.complete?' · 🏆 '+allTeams[t.winner].name:''}
+    </div>`;
+  });
+  el.innerHTML=h;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -830,47 +709,46 @@ function renderMatchCard(mu,res,isCur,cardId){
 // ═══════════════════════════════════════════════════════════════
 function renderRankings(){
   const el=document.getElementById('tab-rankings');
-  let h='';
-  for(const[div,label,ranks]of[['d1','Division 1',d1Rankings],['d2n','D2 North',d2nRankings],['d2s','D2 South',d2sRankings]]){
-    if(!ranks.length)continue;
-    const mx=Math.max(...ranks.map(i=>teams[i].value));
-    h+=`<div class="section-title">${label}</div>`;
-    h+=`<table class="standings"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Value</th><th>Δ</th><th>W</th><th>L</th><th>Belts</th><th></th></tr></thead><tbody>`;
-    ranks.forEach((tIdx,r)=>{
-      const t=teams[tIdx],d=t.value-t.startValue,bw=((t.value/mx)*100).toFixed(1);
-      const tb=belts.filter(b=>b.holder===tIdx);
-      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${t.name}</td>
-        <td style="font-size:.76rem;color:var(--muted)">${t.comunidad}</td>
-        <td class="val">${fmt(t.value)}</td>
-        <td class="mono ${d>=0?'delta-pos':'delta-neg'}" style="font-size:.73rem">${d>=0?'+':''}${fmt(d)}</td>
-        <td class="mono w">${t.wins}</td><td class="mono l">${t.losses}</td>
-        <td>${tb.map(b=>`<span class="belt-badge belt-${beltCSSLevel(b)}" style="font-size:.55rem;padding:2px 5px">${b.name}</span>`).join(' ')||'—'}</td>
-        <td style="width:90px"><div style="background:var(--surface2);height:5px;border-radius:3px;overflow:hidden"><div style="width:${bw}%;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:3px"></div></div></td></tr>`;
-    });
-    h+=`</tbody></table>`;
-  }
+  const ranked=getRankedTeams().slice(0,100);
+  let h=`<div class="section-title">Top 100 Rankings</div>`;
+  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Value</th><th>Pts</th><th>W</th><th>L</th><th>T</th></tr></thead><tbody>`;
+  ranked.forEach((tIdx,i)=>{
+    const t=allTeams[tIdx],s=teamStats[tIdx]||{};
+    h+=`<tr><td class="pos">${i+1}</td><td style="font-weight:600">${t.name}</td>
+      <td style="font-size:.74rem;color:var(--muted)">${t.comunidad}</td>
+      <td class="val">${fmt(t.value)}</td>
+      <td class="mono" style="color:var(--gold)">${points[tIdx]||0}</td>
+      <td class="mono" style="color:var(--green)">${s.wins||0}</td>
+      <td class="mono" style="color:var(--red-bright)">${s.losses||0}</td>
+      <td class="mono" style="color:var(--muted)">${s.tourneysPlayed||0}</td></tr>`;
+  });
+  h+=`</tbody></table>`;
   el.innerHTML=h;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RENDER: BELTS
+// RENDER: TOURNAMENTS
 // ═══════════════════════════════════════════════════════════════
-function renderBelts(){
-  const el=document.getElementById('tab-belts');
-  const lc={national:'var(--gold)',d2:'var(--cyan)',regional:'var(--blue)',provincial:'var(--purple)'};
-  const nextPri=getRoundPriority(roundNum>0?roundNum:1);
-  const sorted=[...belts].sort((a,b)=>beltSortKey(a,nextPri)-beltSortKey(b,nextPri));
-  let h=`<div class="belts-grid">`;
-  sorted.forEach(b=>{
-    const holder=b.holder!==null?teams[b.holder]:null;
-    h+=`<div class="belt-card">
-      <div class="bt" style="color:${lc[b.level]||'var(--muted)'}">${b.level}${b.tier>1?' · Tier '+b.tier:''}</div>
-      <div class="bn">🏆 ${b.name}</div>
-      <div class="bh">${holder?`Held by <b>${holder.name}</b> · ${fmt(holder.value)}`:'<span style="color:var(--muted)">Unclaimed</span>'}</div>
-      <div class="bstat">${b.defenses||0} defenses · ${b.changes||0} changes</div>
-    </div>`;
+function renderTournaments(){
+  const el=document.getElementById('tab-tournaments');
+  let h='';
+  const tiers=['Grand Slam','Level 2','Level 3','Level 4','Level 5','Level 6','Level 7','Level 8'];
+  tiers.forEach(tier=>{
+    const tt=tournaments.filter(t=>t.label===tier);
+    if(!tt.length)return;
+    const done=tt.filter(t=>t.complete).length;
+    h+=`<div class="section-title">${tier} (${done}/${tt.length} complete)</div>`;
+    tt.sort((a,b)=>a.startDay-b.startDay).slice(0,20).forEach(t=>{
+      const host=allTeams[t.hostIdx];
+      h+=`<div style="font-size:.8rem;padding:5px 0;border-bottom:1px solid rgba(58,50,40,.25)">
+        <span class="tier-badge ${t.css}" style="margin-right:4px">${tier.substring(0,3)}</span>
+        <b>${host.name}</b> <span style="color:var(--muted)">${host.comunidad}</span>
+        · Day ${t.startDay}–${t.startDay+t.days-1}
+        ${t.complete?' · 🏆 '+allTeams[t.winner].name+' | 🥈 '+allTeams[t.runnerUp].name:''}
+      </div>`;
+    });
+    if(tt.length>20)h+=`<div style="font-size:.75rem;color:var(--muted);padding:4px 0">+ ${tt.length-20} more...</div>`;
   });
-  h+=`</div>`;
   el.innerHTML=h;
 }
 
@@ -879,138 +757,27 @@ function renderBelts(){
 // ═══════════════════════════════════════════════════════════════
 function renderTeams(){
   const el=document.getElementById('tab-teams');
-  let h='';const mx=Math.max(...teams.map(t=>t.value));
-  for(const[div,label,ranks]of[['d1','Division 1',d1Rankings],['d2n','D2 North',d2nRankings],['d2s','D2 South',d2sRankings]]){
-    if(!ranks.length)continue;
-    h+=`<div class="section-title">${label}</div><div class="teams-grid">`;
-    ranks.forEach((tIdx,r)=>{
-      const t=teams[tIdx],d=t.value-t.startValue,bw=((t.value/mx)*100).toFixed(1);
-      const tb=belts.filter(b=>b.holder===tIdx);
-      const dc=div==='d1'?'div-d1':div==='d2n'?'div-d2n':'div-d2s';
-      h+=`<div class="team-card"><span class="rank">#${r+1}</span>
-        <div class="name">${t.name}</div>
-        <div class="region">${t.comunidad} · ${t.provincia} <span class="div-badge ${dc}">${divLabel(div)}</span></div>
-        ${tb.length?`<div class="belt-list">${tb.map(b=>`<span class="belt-badge belt-${beltCSSLevel(b)}">${b.name}</span>`).join('')}</div>`:''}
-        <div style="margin-top:6px"><span class="value">${fmt(t.value)}</span>${d?`<span class="vd ${d>0?'delta-pos':'delta-neg'}">${d>0?'+':''}${fmt(d)}</span>`:''}</div>
-        <div style="font-size:.73rem;color:var(--muted);margin-top:3px">${t.wins}W ${t.losses}L</div>
-        <div class="bar-bg"><div class="bar-fill" style="width:${bw}%"></div></div>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-  el.innerHTML=h;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RENDER: D2 GROUPS
-// ═══════════════════════════════════════════════════════════════
-function renderGroups(){
-  const el=document.getElementById('tab-groups');
-  const un=teams.map((_,i)=>i).filter(i=>teams[i].division==='unassigned');
-  let h='';
-
-  // Show confirm button at top if in assignment phase
-  if(phase==='post_round_promo'||phase==='assign_groups'){
-    const canConfirm=un.length===0;
-    const action=phase==='post_round_promo'?'finishPromoGroups()':'finishGroups()';
-    h+=`<div class="controls"><button class="btn" onclick="${action}" ${canConfirm?'':'disabled'}>Confirm Groups${un.length?' ('+un.length+' left)':''}</button></div>`;
-  }
-
-  if(un.length)h+=`<div class="banner banner-blue">Click to cycle: Unassigned → North → South → Unassigned</div>`;
-  if(un.length){
-    h+=`<div class="unassigned-pool"><h3>Unassigned (${un.length})</h3>`;
-    un.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name} <span style="color:var(--muted);font-size:.72rem">${t.comunidad}</span></span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ North</span></div>`});
-    h+=`</div>`;
-  }
-  h+=`<div class="group-columns"><div class="group-col north"><h3>D2 North (${d2nRankings.length})</h3>`;
-  d2nRankings.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name}</span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ South</span></div>`});
-  if(!d2nRankings.length)h+=`<p style="color:var(--muted);font-size:.8rem">Empty</p>`;
-  h+=`</div><div class="group-col south"><h3>D2 South (${d2sRankings.length})</h3>`;
-  d2sRankings.forEach(tIdx=>{const t=teams[tIdx];h+=`<div class="group-item" onclick="cycleTeamGroup(${tIdx})"><span class="gi-name">${t.name}</span><span class="gi-val">${fmt(t.value)}</span><span class="gi-move">→ Remove</span></div>`});
-  if(!d2sRankings.length)h+=`<p style="color:var(--muted);font-size:.8rem">Empty</p>`;
-  h+=`</div></div>`;
-  el.innerHTML=h;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RENDER: BELT LOG
-// ═══════════════════════════════════════════════════════════════
-function renderBeltLog(){
-  const el=document.getElementById('tab-beltlog');
-  if(!beltLog.length){el.innerHTML=`<p style="color:var(--muted);text-align:center;padding:40px">No belt matches yet.</p>`;return}
-
-  // Group by belt
-  const byBelt={};
-  beltLog.forEach(entry=>{
-    if(!byBelt[entry.beltId])byBelt[entry.beltId]={name:entry.beltName,level:entry.beltLevel,entries:[]};
-    byBelt[entry.beltId].entries.push(entry);
+  const sorted=[...allTeams.keys()].sort((a,b)=>allTeams[b].value-allTeams[a].value);
+  let h=`<div class="section-title">All Teams (${allTeams.length}) — sorted by value</div>`;
+  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Provincia</th><th>Value</th><th>Δ</th><th>Tournament</th></tr></thead><tbody>`;
+  sorted.slice(0,100).forEach((tIdx,i)=>{
+    const t=allTeams[tIdx],delta=t.value-t.startValue;
+    const tier=getTier(tIdx+1);
+    h+=`<tr><td class="pos">${i+1}</td><td style="font-weight:600">${t.name}</td>
+      <td style="font-size:.74rem;color:var(--muted)">${t.comunidad}</td>
+      <td style="font-size:.74rem;color:var(--muted)">${t.provincia}</td>
+      <td class="val">${fmt(t.value)}</td>
+      <td class="mono ${delta>=0?'delta-pos':'delta-neg'}" style="font-size:.72rem">${delta>=0?'+':''}${fmt(delta)}</td>
+      <td><span class="tier-badge ${tier.css}">${tier.label}</span></td></tr>`;
   });
-
-  // Sort belt groups: national first, then regional, then provincial
-  const levelOrder={national:0,d2:1,regional:2,provincial:3};
-  const sortedBeltIds=Object.keys(byBelt).sort((a,b)=>(levelOrder[byBelt[a].level]||9)-(levelOrder[byBelt[b].level]||9));
-
-  let h=`<div style="font-size:.82rem;color:var(--muted);margin-bottom:16px">${beltLog.length} belt matches total across ${sortedBeltIds.length} belts</div>`;
-
-  sortedBeltIds.forEach(bId=>{
-    const group=byBelt[bId];
-    const bClass='belt-'+beltCSSLevel({level:group.level});
-    const defenses=group.entries.filter(e=>!e.changed&&!e.newClaim).length;
-    const changes=group.entries.filter(e=>e.changed).length;
-    const claims=group.entries.filter(e=>e.newClaim).length;
-
-    h+=`<div style="margin-bottom:24px">`;
-    h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-      <span class="belt-badge ${bClass}">🏆 ${group.name}</span>
-      <span style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">${group.entries.length} matches · ${defenses} defenses · ${changes} changes${claims?' · '+claims+' claims':''}</span>
-    </div>`;
-
-    group.entries.forEach(entry=>{
-      let icon,cls,desc;
-      if(entry.newClaim){
-        icon='🏆';cls='blog-new';
-        desc=`<b>${entry.winner}</b> claims belt (${entry.team1} vs ${entry.team2})`;
-      }else if(entry.changed){
-        icon='🔄';cls='blog-changed';
-        desc=`<b>${entry.winner}</b> takes from ${entry.defender} (${entry.team1} vs ${entry.team2})`;
-      }else{
-        icon='🛡️';cls='blog-defended';
-        desc=`<b>${entry.defender}</b> defends vs ${entry.challenger} (${entry.team1} vs ${entry.team2})`;
-      }
-      h+=`<div class="blog-entry"><div class="blog-round">R${entry.round}</div><div class="blog-detail ${cls}">${icon} ${desc}</div></div>`;
-    });
-    h+=`</div>`;
-  });
-
+  h+=`</tbody></table>`;
+  if(allTeams.length>100)h+=`<div style="font-size:.75rem;color:var(--muted);margin-top:8px">Showing top 100 of ${allTeams.length}</div>`;
   el.innerHTML=h;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RENDER: HISTORY
+// BOOT
 // ═══════════════════════════════════════════════════════════════
-function renderHistory(){
-  const el=document.getElementById('tab-history');
-  if(!allHistory.length){el.innerHTML=`<p style="color:var(--muted);text-align:center;padding:40px">No rounds yet.</p>`;return}
-  let h='';
-  [...allHistory].reverse().forEach(rnd=>{
-    const priLabels={national:'🏆N',regional:'🔵R',provincial:'🟣P'};
-    h+=`<div class="history-round"><h3>Round ${rnd.round} <span style="font-weight:400;font-size:.72rem;color:var(--muted)">Priority: ${rnd.priority.map(x=>priLabels[x]).join('→')}</span></h3>`;
-    rnd.matches.forEach(res=>{
-      h+=`<div class="history-match">
-        <span class="${res.winnerIdx===res.idx1?'hw':'hl'}">${res.name1}</span> vs
-        <span class="${res.winnerIdx===res.idx2?'hw':'hl'}">${res.name2}</span>
-        · roll ${res.roll}/${res.threshold}${res.worstWins?' 🎲':''}
-        ${!res.stealBlocked?' · <span style="color:var(--orange)">±'+fmt(res.stolen)+'</span>':''}
-        ${res.beltWon?` · <span style="color:${res.beltChanged?'var(--red-bright)':'var(--gold)'}">🏆 ${res.beltName}${res.beltChanged?' CHANGED':''}</span>`:''}
-      </div>`;
-    });
-    h+=`</div>`;
-  });
-  el.innerHTML=h;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// BOOT — load saved state or start fresh
 if(loadState()){
   renderAll();
 }else{
