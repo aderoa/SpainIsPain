@@ -327,44 +327,72 @@ function selectTeams(t){
     ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!sel.has(i)&&fn(i)).forEach(i=>{if(sel.size<n)sel.add(i)});
     for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
   }else{
-    // Half local (same provincia > same comunidad), prioritize region/province ranking contenders
+    // Half local (same provincia > same comunidad)
     const localTarget=Math.floor(n/2);
     const local=ranked.filter(i=>!sel.has(i)&&avail(i)&&(allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad));
-    // Sort local: same-provincia first, then by points (contenders for top spots)
     local.sort((a,b)=>{
       const ap=allTeams[a].provincia===host.provincia?0:1;
       const bp=allTeams[b].provincia===host.provincia?0:1;
       if(ap!==bp)return ap-bp;
       return(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value;
     });
-    local.slice(0,localTarget-1).forEach(i=>sel.add(i)); // -1 for host
+    local.slice(0,localTarget-1).forEach(i=>sel.add(i));
 
-    // Half random from other regions: fewest tournaments played, with contender affinity
-    const randomTarget=n-sel.size;
-    const cands=ranked.filter(i=>!sel.has(i)&&avail(i));
-    cands.sort((a,b)=>{
+    // Half random MUST be from OUTSIDE host comunidad — fewest tournaments first
+    const outsiders=ranked.filter(i=>!sel.has(i)&&avail(i)&&allTeams[i].comunidad!==host.comunidad);
+    outsiders.sort((a,b)=>{
       const sa=stats[a]?.tp||0,sb_=stats[b]?.tp||0;
-      if(sa!==sb_)return sa-sb_; // fewest tournaments first
-      // Slight affinity for province/region contenders (high points in host's region)
-      const aa=allTeams[a].comunidad===host.comunidad?-2:allTeams[a].provincia===host.provincia?-3:0;
-      const ab=allTeams[b].comunidad===host.comunidad?-2:allTeams[b].provincia===host.provincia?-3:0;
-      if(aa!==ab)return aa-ab;
+      if(sa!==sb_)return sa-sb_;
       return Math.random()-0.5;
     });
-    cands.slice(0,randomTarget).forEach(i=>sel.add(i));
+    const randomTarget=n-sel.size;
+    outsiders.slice(0,randomTarget).forEach(i=>sel.add(i));
+    // If not enough outsiders, fill with anyone available
+    if(sel.size<n){
+      const fill=ranked.filter(i=>!sel.has(i)&&avail(i));
+      fill.sort(()=>Math.random()-0.5);
+      fill.slice(0,n-sel.size).forEach(i=>sel.add(i));
+    }
   }
 
   const arr=[...sel].sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
   arr.forEach(i=>{initStats(i);stats[i].busy=t.startDay+t.days-1;stats[i].tp++});
   t.teams=arr;
-  t.bracket=buildBracket(arr);
+  t.bracket=buildTennisBracket(arr);
 }
 
-function buildBracket(teams){
+// Tennis-style bracket: top half seeded in fixed positions, bottom half drawn randomly
+function buildTennisBracket(teams){
   const n=teams.length;
-  const seeds=n===32?[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,23,3,30,14,19,6,27,11,22]
-    :[1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11];
-  return seeds.map(s=>teams[s-1]!=null?teams[s-1]:null);
+  if(n<2)return teams;
+  const halfSeeds=Math.floor(n/2); // 8 seeds for 16, 16 seeds for 32
+  const seeded=teams.slice(0,halfSeeds);
+  const unseeded=[...teams.slice(halfSeeds)];
+  // Shuffle unseeded
+  for(let i=unseeded.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[unseeded[i],unseeded[j]]=[unseeded[j],unseeded[i]]}
+
+  // Seed placement positions (which match slot each seed gets)
+  // For 16-team (8 seeds): S1 vs unseeded at top, S2 vs unseeded at bottom, etc.
+  // Tennis-style: seeds placed so they meet as late as possible
+  const seedSlots16=[0,14,8,6,4,10,12,2]; // S1→match0, S2→match7, S3→match4, S4→match3...
+  const seedSlots32=[0,30,16,14,8,22,24,6,4,26,20,10,12,18,28,2];
+
+  const slots=n===32?seedSlots32:seedSlots16;
+  const bracket=new Array(n).fill(null);
+
+  // Place seeds: each seed goes in an even slot (first team of a match pair)
+  seeded.forEach((tIdx,si)=>{
+    if(si<slots.length)bracket[slots[si]]=tIdx;
+  });
+
+  // Fill remaining slots with unseeded
+  let ui=0;
+  for(let i=0;i<n;i++){
+    if(bracket[i]===null&&ui<unseeded.length){
+      bracket[i]=unseeded[ui++];
+    }
+  }
+  return bracket;
 }
 
 // ═══════════════════════════════════════════════════════════════
