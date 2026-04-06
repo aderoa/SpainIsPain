@@ -274,7 +274,11 @@ function buildCalendar(){
 
     for(let d=1;d<=DAYS-dur+1;d++){
       let score=0;
-      for(let dd=0;dd<dur;dd++)score+=dayLoad[d+dd]*3;
+      for(let dd=0;dd<dur;dd++){
+        score+=dayLoad[d+dd]*3;
+        // Heavy penalty for overlapping with top 12 days
+        if(top12Days.has(d+dd))score+=5000;
+      }
 
       // Penalize same-province nearby
       const pw=provWindows[prov]||[];
@@ -437,8 +441,11 @@ function getAlive(t){
 
 function buildDayQueue(){
   dayQueue=[];queuePos=0;
-  const todayIds=calendar[currentDay]||[];
-  todayIds.forEach(tid=>{
+  const todayIds=(calendar[currentDay]||[]);
+  // Sort tournaments by startDay (consistent order)
+  const sortedTids=[...todayIds].sort((a,b)=>tournaments[a].startDay-tournaments[b].startDay||a-b);
+
+  sortedTids.forEach(tid=>{
     const t=tournaments[tid];
     if(t.complete)return;
     if(!t.teams||!t.teams.length)selectTeams(t);
@@ -447,46 +454,55 @@ function buildDayQueue(){
     if(rIdx>=tr)return;
     const alive=getAlive(t);
     const roundName=rIdx===tr-1?'Final':rIdx===tr-2?'Semi':rIdx===tr-3?'QF':'R'+(rIdx+1);
-    for(let i=0;i<alive.length;i+=2){
-      if(i+1<alive.length){
-        dayQueue.push({tid,rIdx,roundName,t1:alive[i],t2:alive[i+1],result:null});
-      }
-    }
-    // Bronze match if semifinals just happened
+
+    // On final day: bronze match first, then final
     if(rIdx===tr-1&&t.results[tr-2]){
       const sfLosers=t.results[tr-2].map(m=>m.losI);
       if(sfLosers.length===2&&!t.results.bronze){
         dayQueue.push({tid,rIdx:'bronze',roundName:'Bronze',t1:sfLosers[0],t2:sfLosers[1],result:null});
       }
     }
+
+    // Regular matches for this round
+    for(let i=0;i<alive.length;i+=2){
+      if(i+1<alive.length){
+        dayQueue.push({tid,rIdx,roundName,t1:alive[i],t2:alive[i+1],result:null});
+      }
+    }
   });
   daySimmed=dayQueue.length===0;
 }
+
+let lastWinMsg='';
 
 function playNextInQueue(){
   if(queuePos>=dayQueue.length)return;
   const q=dayQueue[queuePos];
   const res=simMatch(q.t1,q.t2,q.tid);
   q.result=res;
-  // Store in tournament
   const t=tournaments[q.tid];
   if(q.rIdx==='bronze'){
     t.results.bronze=[res];
     t.third=res.winI;t.fourth=res.losI;
+    lastWinMsg=`🥉 ${res.wn} wins Bronze at ${allTeams[t.hostIdx].name}!`;
   }else{
     if(!t.results[q.rIdx])t.results[q.rIdx]=[];
     t.results[q.rIdx].push(res);
+    lastWinMsg=`${res.wn} defeats ${res.ln}`;
   }
   queuePos++;
-  // Check if tournament round complete → check if final done
+  // Check if all matches in this round for this tournament are done
   const tr=totalRounds(t);
-  const roundMatches=dayQueue.filter(x=>x.tid===q.tid&&x.rIdx===q.rIdx);
-  if(roundMatches.every(x=>x.result)&&q.rIdx===tr-1){
-    t.winner=res.winI;t.runnerUp=res.losI;t.complete=true;
-    awardPoints(t);
-    t.teams.forEach(i=>{initStats(i);stats[i].busy=0});
+  if(q.rIdx===tr-1){
+    const roundMatches=dayQueue.filter(x=>x.tid===q.tid&&x.rIdx===q.rIdx);
+    if(roundMatches.every(x=>x.result)){
+      t.winner=roundMatches[0].result.winI;t.runnerUp=roundMatches[0].result.losI;t.complete=true;
+      awardPoints(t);
+      t.teams.forEach(i=>{initStats(i);stats[i].busy=0});
+      lastWinMsg=`🏆 ${allTeams[t.winner].name} wins the ${t.label} at ${allTeams[t.hostIdx].name}!`;
+    }
   }
-  if(queuePos>=dayQueue.length)daySimmed=true;
+  if(queuePos>=dayQueue.length){daySimmed=true;lastWinMsg=''}
   saveState();
   renderAll();
 }
@@ -495,6 +511,7 @@ function simRestOfDay(){while(queuePos<dayQueue.length)playNextInQueue()}
 
 function advanceDay(){
   if(seasonDone)return;
+  lastWinMsg='';
   currentDay++;
   if(currentDay>DAYS){seasonDone=true;saveState();renderAll();return}
   buildDayQueue();
@@ -529,7 +546,7 @@ async function initSeason(){
   }catch(e){document.getElementById('h-info').textContent='⚠️ Fetch failed';return}
   tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
-  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;
+  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;lastWinMsg='';
   document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments`;
   saveState();renderAll();
 }
@@ -538,8 +555,8 @@ function resetSeason(){localStorage.removeItem(SAVE_KEY);initSeason()}
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed}))}catch(e){}}
-function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;return allTeams.length>0}catch(e){return false}}
+function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,lastWinMsg}))}catch(e){}}
+function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;lastWinMsg=s.lastWinMsg||'';return allTeams.length>0}catch(e){return false}}
 
 // ═══════════════════════════════════════════════════════════════
 // TABS + RENDER
@@ -571,6 +588,14 @@ function renderSeason(){
   }
   h+=`<button class="btn btn-reset btn-sm" onclick="resetSeason()" style="margin-left:auto">Reset</button>`;
   h+=`</div>`;
+
+  // Winner announcement
+  if(lastWinMsg&&!daySimmed){
+    const isTrophy=lastWinMsg.startsWith('🏆');
+    const isBronze=lastWinMsg.startsWith('🥉');
+    const cls=isTrophy?'banner-gold':isBronze?'banner-green':'banner';
+    h+=`<div class="${cls}" style="${!isTrophy&&!isBronze?'background:rgba(212,168,67,.05);border:1px solid var(--border);color:var(--text)':''};font-weight:600;text-align:center">${lastWinMsg}</div>`;
+  }
 
   if(currentDay>0){
     h+=`<div class="day-nav"><h2>${dayToDate(currentDay)}</h2><span class="day-badge">Day ${currentDay} · ${dayQueue.length} matches</span></div>`;
@@ -725,8 +750,8 @@ function renderRegional(){
     if(t.fourth!=null)entries.push([t.fourth,p[3]]);
     const tr=t.teamCount===32?5:4;
     const qf=t.results[tr-3];
-    if(qf)qf.matches.forEach(m=>{if(m.losI!==t.third&&m.losI!==t.fourth)entries.push([m.losI,p[4]])});
-    if(t.teamCount===32){const r16=t.results[0];if(r16)r16.matches.forEach(m=>{entries.push([m.losI,p[5]])})}
+    if(qf)qf.forEach(m=>{if(m.losI!==t.third&&m.losI!==t.fourth)entries.push([m.losI,p[4]])});
+    if(t.teamCount===32){const r16=t.results[0];if(r16)r16.forEach(m=>{entries.push([m.losI,p[5]])})}
 
     entries.forEach(([idx,ep])=>{
       if(!comPts[com])comPts[com]={};
