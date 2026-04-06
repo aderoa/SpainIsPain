@@ -580,19 +580,81 @@ function awardPoints(t){
 // ═══════════════════════════════════════════════════════════════
 async function initSeason(){
   document.getElementById('h-info').textContent='Fetching teams...';
+  // Preserve palmares and old team names for migration
+  const oldPalmares=[...palmares];
+  const oldNames=allTeams.map(t=>t.name);
+
   try{
     const r=await fetch(CSV_URL);const text=await r.text();
     const data=parseCSV(text);
     if(!data||data.length<8){document.getElementById('h-info').textContent='⚠️ Not enough teams ('+((data||[]).length)+')';return}
     allTeams=data.map(t=>({...t,startValue:t.value}));
   }catch(e){document.getElementById('h-info').textContent='⚠️ Fetch failed';return}
+
+  // Migrate palmares: if a team at same index changed name, update all string references
+  if(oldNames.length===allTeams.length){
+    const renames={};
+    oldNames.forEach((old,i)=>{
+      if(old&&allTeams[i].name!==old)renames[old]=allTeams[i].name;
+    });
+    if(Object.keys(renames).length>0){
+      console.log('Name migrations:',renames);
+      oldPalmares.forEach(p=>{
+        if(renames[p.winnerName])p.winnerName=renames[p.winnerName];
+        if(renames[p.runnerUpName])p.runnerUpName=renames[p.runnerUpName];
+        if(renames[p.thirdName])p.thirdName=renames[p.thirdName];
+        if(renames[p.hostName])p.hostName=renames[p.hostName];
+      });
+    }
+  }
+
   tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
-  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};seasonYear=1;
-  document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments`;
+  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};
+  // Preserve palmares across seasons, increment year
+  palmares=oldPalmares;
+  seasonYear=(seasonYear||0)+1;
+  document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments · Year ${seasonYear}`;
   saveState();renderAll();
 }
-function resetSeason(){localStorage.removeItem(SAVE_KEY);localStorage.removeItem('sip_tourn_v2');localStorage.removeItem('sip_tournament_v1');initSeason()}
+function resetSeason(){
+  palmares=[];seasonYear=0;h2h={};
+  localStorage.removeItem(SAVE_KEY);localStorage.removeItem('sip_tourn_v2');localStorage.removeItem('sip_tournament_v1');
+  initSeason();
+}
+
+// Sync names from live CSV (for mid-season fixes like renames)
+async function syncNames(){
+  try{
+    const r=await fetch(CSV_URL);const text=await r.text();
+    const data=parseCSV(text);
+    if(!data||data.length!==allTeams.length)return;
+    const renames={};
+    allTeams.forEach((t,i)=>{
+      if(data[i]&&data[i].name!==t.name){renames[t.name]=data[i].name;t.name=data[i].name}
+    });
+    if(Object.keys(renames).length>0){
+      console.log('Synced names:',renames);
+      palmares.forEach(p=>{
+        if(renames[p.winnerName])p.winnerName=renames[p.winnerName];
+        if(renames[p.runnerUpName])p.runnerUpName=renames[p.runnerUpName];
+        if(renames[p.thirdName])p.thirdName=renames[p.thirdName];
+        if(renames[p.hostName])p.hostName=renames[p.hostName];
+      });
+      // Also update match results in dayQueue
+      dayQueue.forEach(q=>{
+        if(q.result){
+          q.result.n1=allTeams[q.result.a].name;
+          q.result.n2=allTeams[q.result.b].name;
+          q.result.wn=allTeams[q.result.winI].name;
+          q.result.ln=allTeams[q.result.losI].name;
+        }
+      });
+      saveState();renderAll();
+      document.getElementById('h-info').textContent+=` · Names synced: ${Object.keys(renames).join(', ')}`;
+    }
+  }catch(e){}
+}
 
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
@@ -628,7 +690,11 @@ function renderSeason(){
     h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<7&&!seasonDone;i++){advanceDay();if(!daySimmed)simRestOfDay()}renderAll()">+7 Days</button>`;
     h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<30&&!seasonDone;i++){advanceDay();if(!daySimmed)simRestOfDay()}renderAll()">+30 Days</button>`;
   }
-  h+=`<button class="btn btn-reset btn-sm" onclick="resetSeason()" style="margin-left:auto">Reset</button>`;
+  h+=`<span style="margin-left:auto;display:flex;gap:6px">`;
+  if(seasonDone)h+=`<button class="btn btn-sm" onclick="initSeason()">New Season (Y${seasonYear+1})</button>`;
+  h+=`<button class="btn btn-outline btn-sm" onclick="syncNames()">Sync Names</button>`;
+  h+=`<button class="btn btn-reset btn-sm" onclick="if(confirm('Full reset? This clears all history.'))resetSeason()">Full Reset</button>`;
+  h+=`</span>`;
   h+=`</div>`;
 
 
@@ -1071,7 +1137,7 @@ function teamLink(tIdx,name){
 // ═══════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════
-if(loadState()){renderAll()}else{initSeason()}
+if(loadState()){renderAll();syncNames()}else{initSeason()}
 </script>
 </body>
 </html>
