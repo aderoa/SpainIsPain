@@ -141,31 +141,53 @@ const COM_FLAGS={
   'Extremadura':'Flag_of_Extremadura_(with_coat_of_arms).svg',
   'Cantabria':'Flag_of_Cantabria.svg',
   'La Rioja':'Flag_of_La_Rioja_(with_coat_of_arms).svg',
-  'Ceuta':'Flag_of_Ceuta.svg',
-  'Melilla':'Flag_of_Melilla.svg',
 };
 const PROV_FLAGS={
   'Almería':'Flag_Almer%C3%ADa_Province.svg',
   'Cádiz':'Flag_C%C3%A1diz_Province.svg',
+  'Córdoba':'Flag_C%C3%B3rdoba_Province.svg',
+  'Granada':'Flag_Granada_Province.svg',
+  'Huelva':'Flag_Huelva_Province.svg',
+  'Jaén':'Flag_Ja%C3%A9n_Province.svg',
   'Málaga':'Flag_M%C3%A1laga_Province.svg',
   'Sevilla':'Flag_of_Diputacion_de_Sevilla_Spain.svg',
   'Huesca':'Flag_of_Huesca_(province).svg',
   'Teruel':'Flag_of_Teruel_(province).svg',
+  'Zaragoza':'Flag_of_Zaragoza_province.svg',
+  'Barcelona':'Flag_of_Barcelona_(province).svg',
+  'Girona':'Flag_of_Girona_province.svg',
+  'Lleida':'Flag_of_the_province_of_Lleida.svg',
+  'Tarragona':'Flag_of_Tarragona_province.svg',
+  'Alicante':'Flag_of_the_province_of_Alicante.svg',
+  'Castellón':'Flag_of_the_Valencian_Community_(2x3).svg',
+  'València':'Flag_of_the_Valencian_Community_(2x3).svg',
   'Ciudad Real':'Flag_Ciudad_Real_Province.svg',
   'Cuenca':'Flag_Cuenca_Province.svg',
   'Guadalajara':'Flag_Guadalajara_Province.svg',
+  'Toledo':'Flag_Toledo_Province.svg',
+  'Albacete':'Flag_Albacete_Province.svg',
   'Burgos':'Flag_Burgos_Province.svg',
+  'León':'Flag_Le%C3%B3n_Province.svg',
+  'Palencia':'Flag_Palencia_Province.svg',
+  'Salamanca':'Flag_Salamanca_Province.svg',
   'Segovia':'Flag_Segovia_province.svg',
   'Soria':'Flag_Soria_province.svg',
-  'Barcelona':'Flag_of_Barcelona_(province).svg',
+  'Valladolid':'Flag_Valladolid_Province.svg',
+  'Zamora':'Flag_Zamora_Province.svg',
+  'Ávila':'Flag_%C3%81vila_Province.svg',
   'Cáceres':'Flag_of_the_province_of_C%C3%A1ceres.svg',
+  'Badajoz':'Flag_Badajoz_Province.svg',
+  'A Coruña':'Flag_of_the_province_of_A_Coru%C3%B1a.svg',
   'Lugo':'Flag_of_Lugo_province.svg',
+  'Ourense':'Flag_Ourense_Province.svg',
   'Pontevedra':'Flag_Pontevedra_Province.svg',
-  'Álava':'Flag_of_%C3%81lava.svg',
-  'Guipúzcoa':'Flag_of_Guip%C3%BAzcoa.svg',
-  'Las Palmas':'Flag_of_the_Canary_Islands.svg',
-  'Santa Cruz de Tenerife':'Flag_of_the_Canary_Islands.svg',
-  'Zaragoza':'Flag_of_Aragon.svg',
+  'Araba':'Flag_of_%C3%81lava.svg',
+  'Bizkaia':'Flag_of_Biscay.svg',
+  'Gipuzkoa':'Flag_of_Gipuzkoa.svg',
+  'Las Palmas':'Flag_of_Las_Palmas.svg',
+  'Santa Cruz de Tenerife':'Flag_of_the_Province_of_Santa_Cruz_de_Tenerife.svg',
+  'Ceuta':'Flag_of_Ceuta.svg',
+  'Melilla':'Flag_of_Melilla.svg',
 };
 function flagUrl(file,w){return FP+file+'?width='+w}
 function flagImg(com,prov,size){
@@ -228,19 +250,19 @@ function parseCSV(text){
   const lines=text.split('\n').map(l=>l.replace(/\r/g,'').trim()).filter(l=>l);
   if(lines.length<2)return[];
   const rows=[];
-  for(let i=1;i<lines.length;i++){const c=parseCSVRow(lines[i]);if(c.length>=4){const v=parseInt(c[3].replace(/[.,\s"]/g,''),10);if(!isNaN(v))rows.push({comunidad:c[0].replace(/"/g,''),provincia:c[1].replace(/"/g,''),name:c[2].replace(/"/g,''),value:v})}}
+  for(let i=1;i<lines.length;i++){const c=parseCSVRow(lines[i]);if(c.length>=4){const v=parseInt(c[3].replace(/[.,\s"]/g,''),10);if(!isNaN(v))rows.push({provincia:c[0].replace(/"/g,''),comunidad:c[1].replace(/"/g,''),name:c[2].replace(/"/g,''),value:v})}}
   return rows.sort((a,b)=>b.value-a.value);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CALENDAR — even distribution
+// CALENDAR — even distribution Jan 1 through Dec 31
 // ═══════════════════════════════════════════════════════════════
 function buildCalendar(){
   calendar=Array.from({length:DAYS+1},()=>[]);
+  const dayLoad=new Array(DAYS+1).fill(0);
 
-  // 1) Top 12: evenly spaced, ~30 days apart
+  // 1) Top 12: evenly spaced, no overlap with each other, starting Jan 1
   const top12=tournaments.filter(t=>isTop12(t));
-  // Interleave GS and L2
   const gs=top12.filter(t=>t.label==='Grand Slam');
   const l2=top12.filter(t=>t.label==='Level 2');
   const ordered=[];
@@ -250,89 +272,49 @@ function buildCalendar(){
     else if(li<l2.length)ordered.push(l2[li++]);
     else if(gi<gs.length)ordered.push(gs[gi++]);
   }
-  const topSpacing=Math.floor((DAYS-20)/(ordered.length));
-  let nextDay=10;
+  // Space them: first starts day 1, last one must end by day 365
+  const totalTop12Days=ordered.reduce((s,t)=>s+t.days,0); // 12*5=60
+  const gapBetween=Math.floor((DAYS-totalTop12Days)/(ordered.length-1));
+  let nd=1;
   ordered.forEach(t=>{
-    t.startDay=nextDay;
-    for(let d=0;d<t.days;d++)calendar[nextDay+d].push(t.id);
-    nextDay+=topSpacing;
+    t.startDay=nd;
+    for(let d=0;d<t.days;d++){calendar[nd+d].push(t.id);dayLoad[nd+d]++}
+    nd+=t.days+gapBetween;
   });
 
-  // Build set of blocked days (top12 running + cooling)
-  const blocked=new Set();
-  ordered.forEach(t=>{
-    for(let d=t.startDay;d<t.startDay+t.days;d++)blocked.add(d);
-    // Cooling before and after
-    for(let d=Math.max(1,t.startDay-COOL);d<t.startDay;d++)blocked.add(d);
-    for(let d=t.startDay+t.days;d<Math.min(DAYS+1,t.startDay+t.days+COOL);d++)blocked.add(d);
-  });
+  // Top 12 running days (only these are blocked for OTHER top 12, not for lower tournaments)
+  const top12Days=new Set();
+  ordered.forEach(t=>{for(let d=t.startDay;d<t.startDay+t.days;d++)top12Days.add(d)});
 
-  // 2) Remaining: distribute evenly using round-robin over available days
+  // 2) All other tournaments: greedy lowest-load, avoid same-province overlap
   const rest=tournaments.filter(t=>!isTop12(t));
-  // Sort: higher tiers first, then shuffle within tier
-  rest.sort((a,b)=>{
-    const ta=TIERS.findIndex(([mx])=>a.hostIdx+1<=mx);
-    const tb=TIERS.findIndex(([mx])=>b.hostIdx+1<=mx);
-    if(ta!==tb)return ta-tb;
-    return Math.random()-0.5;
-  });
+  for(let i=rest.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]]}
 
-  // Collect available slots (non-blocked days)
-  const availDays=[];
-  for(let d=1;d<=DAYS;d++)if(!blocked.has(d))availDays.push(d);
-
-  // For each tournament, find best starting day (even spread + avoid same-province)
-  // Use a load counter per day to keep it even
-  const dayLoad={};
-  const provDays={}; // {provincia: Set of days with tournaments}
+  const provWindows={};
 
   rest.forEach(t=>{
-    const hostProv=allTeams[t.hostIdx].provincia;
-    const hostCom=allTeams[t.hostIdx].comunidad;
+    const prov=allTeams[t.hostIdx].provincia;
+    const dur=t.days;
     let bestDay=1,bestScore=Infinity;
 
-    // Sample evenly across the year
-    const step=Math.max(1,Math.floor(availDays.length/50));
-    for(let si=0;si<availDays.length;si+=step){
-      const d=availDays[si];
-      if(d+t.days-1>DAYS)continue;
-      // Check no blocked days in range
-      let ok=true;
-      for(let dd=0;dd<t.days;dd++)if(blocked.has(d+dd)){ok=false;break}
-      if(!ok)continue;
+    for(let d=1;d<=DAYS-dur+1;d++){
+      let score=0;
+      for(let dd=0;dd<dur;dd++)score+=dayLoad[d+dd]*3;
 
-      let score=0;
-      for(let dd=0;dd<t.days;dd++){
-        score+=(dayLoad[d+dd]||0)*5;
-        // Same-province penalty
-        if(provDays[hostProv]?.has(d+dd))score+=200;
-        if(!provDays[hostProv]){
-          const comTeams=calendar[d+dd].map(id=>allTeams[tournaments[id].hostIdx].comunidad);
-          if(comTeams.includes(hostCom))score+=50;
-        }
+      // Penalize same-province nearby
+      const pw=provWindows[prov]||[];
+      for(const w of pw){
+        if(d<=w.end+3&&d+dur-1>=w.start-3)score+=500;
+        if(d<=w.end&&d+dur-1>=w.start)score+=2000;
       }
-      if(score<bestScore){bestScore=score;bestDay=d}
-    }
-    // Also try nearby days for fine-tuning
-    for(let d=Math.max(1,bestDay-10);d<=Math.min(DAYS-t.days+1,bestDay+10);d++){
-      let ok=true;
-      for(let dd=0;dd<t.days;dd++)if(blocked.has(d+dd)){ok=false;break}
-      if(!ok)continue;
-      let score=0;
-      for(let dd=0;dd<t.days;dd++){
-        score+=(dayLoad[d+dd]||0)*5;
-        if(provDays[hostProv]?.has(d+dd))score+=200;
-      }
+
       if(score<bestScore){bestScore=score;bestDay=d}
     }
 
     t.startDay=bestDay;
-    for(let d=0;d<t.days;d++){
-      calendar[bestDay+d].push(t.id);
-      dayLoad[bestDay+d]=(dayLoad[bestDay+d]||0)+1;
-      if(!provDays[hostProv])provDays[hostProv]=new Set();
-      provDays[hostProv].add(bestDay+d);
-    }
+    for(let d=0;d<dur;d++){calendar[bestDay+d].push(t.id);dayLoad[bestDay+d]++}
+    if(!provWindows[prov])provWindows[prov]=[];
+    provWindows[prov].push({start:bestDay,end:bestDay+dur-1});
   });
 }
 
@@ -347,8 +329,10 @@ function selectTeams(t){
   const ranked=getRanked();
   const n=t.teamCount;
   const avail=i=>{initStats(i);return stats[i].busy<t.startDay};
-  const availCool=i=>{initStats(i);return stats[i].busy<=t.startDay-COOL};
-  const fn=isTop12(t)?availCool:avail;
+  // For top-12: teams must be free 7 days before (so they don't get stuck in minor tournaments)
+  // For others: just need to not be currently busy
+  const availTop12=i=>{initStats(i);return stats[i].busy<=t.startDay-COOL};
+  const fn=isTop12(t)?availTop12:avail;
   const sel=new Set([t.hostIdx]);
 
   if(t.label==='Grand Slam'){
