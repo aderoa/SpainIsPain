@@ -69,9 +69,12 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 .winner-tag{font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(76,175,106,.15);color:var(--green)}
 .loser-tag{font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(232,85,80,.1);color:var(--red-bright)}
 
-.tourn-header-bar{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
-.tourn-header-bar .th-name{font-weight:700;font-size:.92rem}
-.tourn-header-bar .th-meta{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
+.tourn-header-bar{background:linear-gradient(135deg,var(--surface2),var(--surface));border:2px solid var(--border);border-radius:9px;padding:14px 18px;margin:16px 0 6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;border-left:4px solid var(--gold)}
+.tourn-header-bar .th-name{font-weight:800;font-size:1rem}
+.tourn-header-bar .th-meta{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.tourn-header-bar.th-gs{border-left-color:var(--gold);background:linear-gradient(135deg,rgba(212,168,67,.08),var(--surface))}
+.tourn-header-bar.th-l2{border-left-color:var(--blue);background:linear-gradient(135deg,rgba(74,140,201,.06),var(--surface))}
+.tourn-header-bar.th-lo{border-left-color:var(--border)}
 
 .day-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .day-nav h2{font-size:1.15rem;font-weight:800}
@@ -145,59 +148,40 @@ const COM_FLAGS={
 const PROV_FLAGS={
   'Almería':'Flag_Almer%C3%ADa_Province.svg',
   'Cádiz':'Flag_C%C3%A1diz_Province.svg',
-  'Córdoba':'Flag_C%C3%B3rdoba_Province.svg',
-  'Granada':'Flag_Granada_Province.svg',
-  'Huelva':'Flag_Huelva_Province.svg',
-  'Jaén':'Flag_Ja%C3%A9n_Province.svg',
   'Málaga':'Flag_M%C3%A1laga_Province.svg',
   'Sevilla':'Flag_of_Diputacion_de_Sevilla_Spain.svg',
   'Huesca':'Flag_of_Huesca_(province).svg',
   'Teruel':'Flag_of_Teruel_(province).svg',
-  'Zaragoza':'Flag_of_Zaragoza_province.svg',
   'Barcelona':'Flag_of_Barcelona_(province).svg',
-  'Girona':'Flag_of_Girona_province.svg',
-  'Lleida':'Flag_of_the_province_of_Lleida.svg',
-  'Tarragona':'Flag_of_Tarragona_province.svg',
-  'Alicante':'Flag_of_the_province_of_Alicante.svg',
-  'Castellón':'Flag_of_the_Valencian_Community_(2x3).svg',
-  'València':'Flag_of_the_Valencian_Community_(2x3).svg',
   'Ciudad Real':'Flag_Ciudad_Real_Province.svg',
   'Cuenca':'Flag_Cuenca_Province.svg',
   'Guadalajara':'Flag_Guadalajara_Province.svg',
-  'Toledo':'Flag_Toledo_Province.svg',
-  'Albacete':'Flag_Albacete_Province.svg',
   'Burgos':'Flag_Burgos_Province.svg',
-  'León':'Flag_Le%C3%B3n_Province.svg',
-  'Palencia':'Flag_Palencia_Province.svg',
-  'Salamanca':'Flag_Salamanca_Province.svg',
   'Segovia':'Flag_Segovia_province.svg',
   'Soria':'Flag_Soria_province.svg',
-  'Valladolid':'Flag_Valladolid_Province.svg',
-  'Zamora':'Flag_Zamora_Province.svg',
-  'Ávila':'Flag_%C3%81vila_Province.svg',
   'Cáceres':'Flag_of_the_province_of_C%C3%A1ceres.svg',
-  'Badajoz':'Flag_Badajoz_Province.svg',
-  'A Coruña':'Flag_of_the_province_of_A_Coru%C3%B1a.svg',
   'Lugo':'Flag_of_Lugo_province.svg',
-  'Ourense':'Flag_Ourense_Province.svg',
   'Pontevedra':'Flag_Pontevedra_Province.svg',
   'Araba':'Flag_of_%C3%81lava.svg',
   'Bizkaia':'Flag_of_Biscay.svg',
   'Gipuzkoa':'Flag_of_Gipuzkoa.svg',
-  'Las Palmas':'Flag_of_Las_Palmas.svg',
-  'Santa Cruz de Tenerife':'Flag_of_the_Province_of_Santa_Cruz_de_Tenerife.svg',
   'Ceuta':'Flag_of_Ceuta.svg',
   'Melilla':'Flag_of_Melilla.svg',
 };
 function flagUrl(file,w){return FP+file+'?width='+w}
 function flagImg(com,prov,size){
   const s=size||14;
-  // Try provincia flag first, fall back to comunidad
+  const h=Math.round(s*0.67);
+  // Try provincia-specific flag, then comunidad flag
   const pf=prov&&PROV_FLAGS[prov];
   const cf=COM_FLAGS[com];
-  const file=pf||cf;
-  if(!file)return'';
-  return`<img src="${flagUrl(file,s*2)}" width="${s}" height="${Math.round(s*0.67)}" style="vertical-align:middle;margin-right:2px;border-radius:1px;object-fit:cover" onerror="this.style.display='none'" loading="lazy">`;
+  if(!pf&&!cf)return'';
+  if(pf){
+    // Render provincia flag with comunidad fallback on error
+    const fallback=cf?`this.src='${flagUrl(cf,s*2)}';this.onerror=function(){this.style.display='none'}`:`this.style.display='none'`;
+    return`<img src="${flagUrl(pf,s*2)}" width="${s}" height="${h}" style="vertical-align:middle;margin-right:2px;border-radius:1px;object-fit:cover" onerror="${fallback}" loading="lazy">`;
+  }
+  return`<img src="${flagUrl(cf,s*2)}" width="${s}" height="${h}" style="vertical-align:middle;margin-right:2px;border-radius:1px;object-fit:cover" onerror="this.style.display='none'" loading="lazy">`;
 }
 function regBadge(com,prov){
   return flagImg(com,prov,14);
@@ -343,20 +327,31 @@ function selectTeams(t){
     ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!sel.has(i)&&fn(i)).forEach(i=>{if(sel.size<n)sel.add(i)});
     for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
   }else{
-    // 8 local
-    const local=ranked.filter(i=>(allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad)&&!sel.has(i)&&avail(i));
-    local.slice(0,n/2-1).forEach(i=>sel.add(i));
-    // 8 random: fewest tournaments, with region affinity
+    // Half local (same provincia > same comunidad), prioritize region/province ranking contenders
+    const localTarget=Math.floor(n/2);
+    const local=ranked.filter(i=>!sel.has(i)&&avail(i)&&(allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad));
+    // Sort local: same-provincia first, then by points (contenders for top spots)
+    local.sort((a,b)=>{
+      const ap=allTeams[a].provincia===host.provincia?0:1;
+      const bp=allTeams[b].provincia===host.provincia?0:1;
+      if(ap!==bp)return ap-bp;
+      return(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value;
+    });
+    local.slice(0,localTarget-1).forEach(i=>sel.add(i)); // -1 for host
+
+    // Half random from other regions: fewest tournaments played, with contender affinity
+    const randomTarget=n-sel.size;
     const cands=ranked.filter(i=>!sel.has(i)&&avail(i));
     cands.sort((a,b)=>{
-      const sa=stats[a]?.tp||0,sb=stats[b]?.tp||0;
-      if(sa!==sb)return sa-sb;
-      // Affinity for host region
-      const aa=allTeams[a].comunidad===host.comunidad?-1:0;
-      const ab=allTeams[b].comunidad===host.comunidad?-1:0;
-      return aa-ab||Math.random()-0.5;
+      const sa=stats[a]?.tp||0,sb_=stats[b]?.tp||0;
+      if(sa!==sb_)return sa-sb_; // fewest tournaments first
+      // Slight affinity for province/region contenders (high points in host's region)
+      const aa=allTeams[a].comunidad===host.comunidad?-2:allTeams[a].provincia===host.provincia?-3:0;
+      const ab=allTeams[b].comunidad===host.comunidad?-2:allTeams[b].provincia===host.provincia?-3:0;
+      if(aa!==ab)return aa-ab;
+      return Math.random()-0.5;
     });
-    cands.slice(0,n-sel.size).forEach(i=>sel.add(i));
+    cands.slice(0,randomTarget).forEach(i=>sel.add(i));
   }
 
   const arr=[...sel].sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
@@ -550,7 +545,8 @@ function renderSeason(){
     for(const[tid,matches]of Object.entries(byTourn)){
       const t=tournaments[tid];
       const host=allTeams[t.hostIdx];
-      h+=`<div class="tourn-header-bar">
+      const thCls=t.label==='Grand Slam'?'th-gs':t.label==='Level 2'?'th-l2':'th-lo';
+      h+=`<div class="tourn-header-bar ${thCls}">
         <span class="th-name">${regBadge(host.comunidad,host.provincia)}<span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
         <span class="th-meta">${t.teamCount} teams · ${matches[0].roundName}${t.complete?' · 🏆 '+allTeams[t.winner].name:''}</span>
       </div>`;
@@ -669,55 +665,86 @@ function renderRegional(){
   const el=document.getElementById('tab-regional');
   let h='';
 
-  // By comunidad
-  const coms={};
-  allTeams.forEach((t,i)=>{if(!coms[t.comunidad])coms[t.comunidad]=[];coms[t.comunidad].push(i)});
-  // Sort comunidades by total points
-  const comList=Object.entries(coms).sort((a,b)=>{
-    const pa=a[1].reduce((s,i)=>s+(pts[i]||0),0);
-    const pb=b[1].reduce((s,i)=>s+(pts[i]||0),0);
-    return pb-pa;
+  // Build per-region and per-province points: who earned what IN tournaments hosted there
+  const comPts={};  // {comunidad: {teamIdx: totalPts}}
+  const provPts={}; // {provincia: {teamIdx: totalPts}}
+
+  tournaments.filter(t=>t.complete).forEach(t=>{
+    const host=allTeams[t.hostIdx];
+    const com=host.comunidad, prov=host.provincia;
+    if(!comPts[com])comPts[com]={};
+    if(!provPts[prov])provPts[prov]={com};
+
+    const p=PTS[t.label]||[10,5,3,2,1,0];
+    const entries=[];
+    if(t.winner!=null)entries.push([t.winner,p[0]]);
+    if(t.runnerUp!=null)entries.push([t.runnerUp,p[1]]);
+    if(t.third!=null)entries.push([t.third,p[2]]);
+    if(t.fourth!=null)entries.push([t.fourth,p[3]]);
+    const tr=t.teamCount===32?5:4;
+    const qf=t.results[tr-3];
+    if(qf)qf.matches.forEach(m=>{if(m.losI!==t.third&&m.losI!==t.fourth)entries.push([m.losI,p[4]])});
+    if(t.teamCount===32){const r16=t.results[0];if(r16)r16.matches.forEach(m=>{entries.push([m.losI,p[5]])})}
+
+    entries.forEach(([idx,ep])=>{
+      if(!comPts[com])comPts[com]={};
+      comPts[com][idx]=(comPts[com][idx]||0)+ep;
+      if(!provPts[prov])provPts[prov]={com};
+      if(!provPts[prov][idx])provPts[prov][idx]=0;
+      provPts[prov][idx]+=ep;
+    });
   });
 
-  h+=`<div class="section-title">Regional Rankings</div>`;
-  comList.forEach(([com,idxs])=>{
-    const totalP=idxs.reduce((s,i)=>s+(pts[i]||0),0);
-    const sorted=idxs.sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
-    h+=`<details style="margin-bottom:8px"><summary style="cursor:pointer;padding:6px 0;font-weight:600;font-size:.85rem">${comFlag(com)}${com} <span class="mono" style="font-size:.7rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.7rem;color:var(--muted)">(${idxs.length} teams)</span></summary>`;
-    h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Provincia</th><th>Pts</th><th>W/L</th></tr></thead><tbody>`;
-    sorted.slice(0,20).forEach((i,r)=>{
-      const t=allTeams[i],s=stats[i]||{};
-      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${t.name}</td>
-        <td style="font-size:.72rem;color:var(--muted)">${t.provincia}</td>
-        <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
-        <td class="mono" style="font-size:.7rem"><span style="color:var(--green)">${s.wins||0}</span>/<span style="color:var(--red-bright)">${s.losses||0}</span></td></tr>`;
+  // Regional rankings
+  h+=`<div class="section-title">Regional Rankings — points earned in each region's tournaments</div>`;
+  const comList=Object.entries(comPts).sort((a,b)=>{
+    const pa=Object.values(a[1]).reduce((s,v)=>s+v,0);
+    const pb=Object.values(b[1]).reduce((s,v)=>s+v,0);
+    return pb-pa;
+  });
+  comList.forEach(([com,teamMap])=>{
+    const totalP=Object.values(teamMap).reduce((s,v)=>s+v,0);
+    const sorted=Object.entries(teamMap).sort((a,b)=>b[1]-a[1]).slice(0,25);
+    const tournCount=tournaments.filter(t=>t.complete&&allTeams[t.hostIdx].comunidad===com).length;
+    h+=`<details style="margin-bottom:8px"><summary style="cursor:pointer;padding:6px 0;font-weight:600;font-size:.85rem">${comFlag(com)}${com} <span class="mono" style="font-size:.7rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.7rem;color:var(--muted)">(${tournCount} tournaments)</span></summary>`;
+    h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>From</th><th>Pts in ${com}</th></tr></thead><tbody>`;
+    sorted.forEach(([idx,ep],r)=>{
+      const t=allTeams[idx];
+      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+        <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
+        <td class="mono" style="color:var(--gold)">${ep}</td></tr>`;
     });
     h+=`</tbody></table></details>`;
   });
 
-  // By provincia (only show provincias with 2+ teams)
-  h+=`<div class="section-title">Provincial Rankings</div>`;
-  const provs={};
-  allTeams.forEach((t,i)=>{if(!provs[t.provincia])provs[t.provincia]={com:t.comunidad,teams:[]};provs[t.provincia].teams.push(i)});
-  const provList=Object.entries(provs).filter(([,v])=>v.teams.length>=2).sort((a,b)=>{
-    const pa=a[1].teams.reduce((s,i)=>s+(pts[i]||0),0);
-    const pb=b[1].teams.reduce((s,i)=>s+(pts[i]||0),0);
+  // Provincial rankings
+  h+=`<div class="section-title">Provincial Rankings — points earned in each province's tournaments</div>`;
+  const provList=Object.entries(provPts).filter(([,v])=>{
+    const keys=Object.keys(v).filter(k=>k!=='com');
+    return keys.length>0;
+  }).sort((a,b)=>{
+    const pa=Object.entries(a[1]).filter(([k])=>k!=='com').reduce((s,[,v])=>s+v,0);
+    const pb=Object.entries(b[1]).filter(([k])=>k!=='com').reduce((s,[,v])=>s+v,0);
     return pb-pa;
   });
-  provList.forEach(([prov,{com,teams:idxs}])=>{
-    const totalP=idxs.reduce((s,i)=>s+(pts[i]||0),0);
-    const sorted=idxs.sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
-    h+=`<details style="margin-bottom:6px"><summary style="cursor:pointer;padding:4px 0;font-size:.82rem">${regBadge(com,prov)}${prov} <span class="mono" style="font-size:.68rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.68rem;color:var(--muted)">(${idxs.length})</span></summary>`;
-    h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Pts</th><th>W/L</th></tr></thead><tbody>`;
-    sorted.slice(0,15).forEach((i,r)=>{
-      const t=allTeams[i],s=stats[i]||{};
-      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${t.name}</td>
-        <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
-        <td class="mono" style="font-size:.7rem"><span style="color:var(--green)">${s.wins||0}</span>/<span style="color:var(--red-bright)">${s.losses||0}</span></td></tr>`;
+  provList.forEach(([prov,data])=>{
+    const com=data.com||'';
+    const entries=Object.entries(data).filter(([k])=>k!=='com');
+    const totalP=entries.reduce((s,[,v])=>s+v,0);
+    const sorted=entries.sort((a,b)=>b[1]-a[1]).slice(0,20);
+    const tournCount=tournaments.filter(t=>t.complete&&allTeams[t.hostIdx].provincia===prov).length;
+    h+=`<details style="margin-bottom:6px"><summary style="cursor:pointer;padding:4px 0;font-size:.82rem">${regBadge(com,prov)}${prov} <span class="mono" style="font-size:.68rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.68rem;color:var(--muted)">(${tournCount} tourn.)</span></summary>`;
+    h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>From</th><th>Pts in ${prov}</th></tr></thead><tbody>`;
+    sorted.forEach(([idx,ep],r)=>{
+      const t=allTeams[idx];
+      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+        <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
+        <td class="mono" style="color:var(--gold)">${ep}</td></tr>`;
     });
     h+=`</tbody></table></details>`;
   });
 
+  if(!comList.length)h+=`<p style="color:var(--muted);text-align:center;padding:20px">No tournaments completed yet.</p>`;
   el.innerHTML=h;
 }
 
