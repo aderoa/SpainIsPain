@@ -11,36 +11,36 @@
 html{background:var(--bg);color:var(--text);font-family:var(--font)}
 body{min-height:100vh}
 
-header{background:linear-gradient(135deg,#1a0a08,#2a1510,#1a0a08);border-bottom:2px solid var(--gold-dim);padding:24px 32px 20px;position:relative;overflow:hidden}
+header{background:linear-gradient(135deg,#1a0a08,#2a1510,#1a0a08);border-bottom:2px solid var(--gold-dim);padding:22px 28px 18px;position:relative;overflow:hidden}
 header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(212,168,67,.03) 60px,rgba(212,168,67,.03) 61px)}
-header h1{font-size:2.2rem;font-weight:900;letter-spacing:-1px;position:relative;background:linear-gradient(to right,var(--gold),#f0d078,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-header .sub{font-size:.8rem;color:var(--muted);margin-top:3px;position:relative;letter-spacing:2px;text-transform:uppercase}
-header .info{font-size:.72rem;color:var(--gold);font-weight:600;margin-top:5px;position:relative;font-family:var(--mono)}
+header h1{font-size:2rem;font-weight:900;letter-spacing:-1px;position:relative;background:linear-gradient(to right,var(--gold),#f0d078,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header .sub{font-size:.78rem;color:var(--muted);margin-top:2px;position:relative;letter-spacing:2px;text-transform:uppercase}
+header .info{font-size:.7rem;color:var(--gold);font-weight:600;margin-top:4px;position:relative;font-family:var(--mono)}
 
 nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;overflow-x:auto}
-nav button{flex:0 0 auto;padding:13px 15px;background:none;border:none;color:var(--muted);font-family:var(--font);font-size:.75rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+nav button{flex:0 0 auto;padding:12px 14px;background:none;border:none;color:var(--muted);font-family:var(--font);font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
 nav button:hover{color:var(--text);background:rgba(212,168,67,.05)}
 nav button.active{color:var(--gold);border-bottom-color:var(--gold)}
 
-.tab{display:none;padding:20px;max-width:1060px;margin:0 auto}
+.tab{display:none;padding:18px;max-width:1060px;margin:0 auto}
 .tab.active{display:block}
 
-.btn{padding:10px 24px;background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:#0e0c0b;font-family:var(--font);font-size:.82rem;font-weight:700;border:none;border-radius:7px;cursor:pointer;transition:all .15s}
+.btn{padding:10px 22px;background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:#0e0c0b;font-family:var(--font);font-size:.8rem;font-weight:700;border:none;border-radius:7px;cursor:pointer;transition:all .15s}
 .btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(212,168,67,.25)}
 .btn:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none}
-.btn-sm{padding:7px 16px;font-size:.75rem}
+.btn-sm{padding:7px 14px;font-size:.73rem}
 .btn-outline{background:transparent;border:1px solid var(--gold-dim);color:var(--gold)}
 .btn-outline:hover{background:rgba(212,168,67,.1)}
 .btn-reset{background:transparent;border:1px solid var(--red);color:var(--red-bright)}
-.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 
-.section-title{font-size:.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.section-title{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
 
-table.tbl{width:100%;border-collapse:collapse;font-size:.8rem}
-table.tbl th{text-align:left;padding:8px 10px;font-size:.65rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
-table.tbl td{padding:8px 10px;border-bottom:1px solid rgba(58,50,40,.35);vertical-align:middle}
+table.tbl{width:100%;border-collapse:collapse;font-size:.78rem}
+table.tbl th{text-align:left;padding:7px 9px;font-size:.63rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+table.tbl td{padding:7px 9px;border-bottom:1px solid rgba(58,50,40,.3);vertical-align:middle}
 table.tbl tr:hover td{background:rgba(212,168,67,.03)}
-.pos{font-family:var(--mono);font-weight:700;color:var(--muted);width:28px}
+.pos{font-family:var(--mono);font-weight:700;color:var(--muted);width:26px}
 .val{font-family:var(--mono);color:var(--gold);font-weight:600}
 .mono{font-family:var(--mono)}
 .delta-pos{color:var(--green)}.delta-neg{color:var(--red-bright)}
@@ -50,34 +50,36 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 .tier-3{background:rgba(155,109,204,.1);color:var(--purple);border:1px solid rgba(155,109,204,.2)}
 .tier-4{background:rgba(91,191,191,.08);color:var(--cyan);border:1px solid rgba(91,191,191,.18)}
 .tier-lo{background:rgba(138,126,110,.08);color:var(--muted);border:1px solid rgba(138,126,110,.18)}
-.tier-badge{display:inline-flex;font-size:.58rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.tier-badge{display:inline-flex;font-size:.55rem;font-weight:700;letter-spacing:.7px;text-transform:uppercase;padding:2px 6px;border-radius:3px}
 
-.tourn-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
-.tourn-card.active-t{border-color:var(--gold)}
-.tourn-card.done-t{border-color:rgba(76,175,106,.2)}
-.tourn-header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
-.tourn-name{font-weight:700;font-size:.9rem}
-.tourn-meta{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
-.tourn-body{padding:0 16px 12px;font-size:.8rem}
-.match-line{padding:5px 0;border-bottom:1px solid rgba(58,50,40,.25);display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
-.match-line .mw{font-weight:600;color:var(--green)}.match-line .ml{color:var(--muted)}
-.match-line .roll-info{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
+/* Region badge */
+.reg{display:inline-flex;font-size:.5rem;font-weight:700;padding:1px 4px;border-radius:2px;letter-spacing:.5px;vertical-align:middle;margin-right:2px}
 
-.day-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.day-nav h2{font-size:1.2rem;font-weight:800}
-.day-badge{font-family:var(--mono);font-size:.72rem;background:var(--surface2);color:var(--gold);padding:5px 12px;border-radius:18px;border:1px solid var(--border)}
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden}
+.match-card.current-m{border-color:var(--gold);box-shadow:0 0 16px rgba(212,168,67,.1)}
+.match-card.played-m{border-color:rgba(212,168,67,.15)}
+.match-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px;gap:12px}
+.match-team{display:flex;align-items:center;gap:8px}
+.match-team.right{justify-content:flex-end;text-align:right}
+.mname{font-weight:600;font-size:.88rem}.mval{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.match-vs{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;min-width:36px;text-align:center}
+.match-details{background:var(--surface2);padding:10px 16px;font-size:.72rem;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid var(--border)}
+.match-details .tag{display:inline-flex;align-items:center;gap:3px}
+.match-details .tag b{color:var(--text);font-weight:600}
+.winner-tag{font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(76,175,106,.15);color:var(--green)}
+.loser-tag{font-size:.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(232,85,80,.1);color:var(--red-bright)}
 
-.banner{padding:12px 18px;border-radius:7px;margin-bottom:14px;font-size:.82rem;font-weight:500}
+.tourn-header-bar{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.tourn-header-bar .th-name{font-weight:700;font-size:.92rem}
+.tourn-header-bar .th-meta{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
+
+.day-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.day-nav h2{font-size:1.15rem;font-weight:800}
+.day-badge{font-family:var(--mono);font-size:.7rem;background:var(--surface2);color:var(--gold);padding:5px 11px;border-radius:16px;border:1px solid var(--border)}
+
+.banner{padding:11px 16px;border-radius:7px;margin-bottom:12px;font-size:.8rem;font-weight:500}
 .banner-gold{background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold)}
 .banner-green{background:rgba(76,175,106,.08);border:1px solid rgba(76,175,106,.2);color:var(--green)}
-.banner-blue{background:rgba(74,140,201,.08);border:1px solid rgba(74,140,201,.2);color:var(--blue)}
-
-.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:2px}
-.cal-cell{width:100%;aspect-ratio:1;border-radius:3px;font-size:.45rem;display:flex;align-items:center;justify-content:center;font-family:var(--mono);cursor:default;transition:all .1s}
-.cal-cell.empty{background:var(--surface)}
-.cal-cell.has-t{background:var(--surface2);color:var(--muted)}
-.cal-cell.top12{background:rgba(212,168,67,.15);color:var(--gold)}
-.cal-cell.today{outline:2px solid var(--gold)}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease both}
@@ -87,14 +89,15 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 
 <header>
   <h1>Spain is Pain</h1>
-  <div class="sub">Tournament Season · 365 Days</div>
-  <div class="info" id="h-info">Loading teams...</div>
+  <div class="sub">Tournament Season</div>
+  <div class="info" id="h-info">Loading...</div>
 </header>
 
 <nav>
   <button class="active" onclick="showTab('season')">Season</button>
   <button onclick="showTab('calendar')">Calendar</button>
   <button onclick="showTab('rankings')">Rankings</button>
+  <button onclick="showTab('regional')">Regions</button>
   <button onclick="showTab('tournaments')">Tournaments</button>
   <button onclick="showTab('teams')">Teams</button>
 </nav>
@@ -102,6 +105,7 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 <div id="tab-season" class="tab active"></div>
 <div id="tab-calendar" class="tab"></div>
 <div id="tab-rankings" class="tab"></div>
+<div id="tab-regional" class="tab"></div>
 <div id="tab-tournaments" class="tab"></div>
 <div id="tab-teams" class="tab"></div>
 
@@ -110,96 +114,133 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vTxJa_oKMLmu1yBLvWDnnuXnb3UduuQIdOrewmqW74XZM3r1VJZR3gO9uHd2GeRaS6vwCxkch0rPdFz/pub?gid=738693130&single=true&output=csv';
-const SAVE_KEY='sip_tournament_v1';
-const TOP12_COOLING=7;
-const SEASON_DAYS=365;
+const SAVE_KEY='sip_tourn_v2';
+const COOL=7;
+const DAYS=365;
 
-// Tier definitions: [maxHostRank, teamCount, days, label, cssClass]
-const TIERS=[
-  [4,32,5,'Grand Slam','tier-gs'],
-  [12,32,5,'Level 2','tier-2'],
-  [28,16,4,'Level 3','tier-3'],
-  [60,16,4,'Level 4','tier-4'],
-  [124,16,4,'Level 5','tier-lo'],
-  [252,16,4,'Level 6','tier-lo'],
-  [508,16,4,'Level 7','tier-lo'],
-  [9999,16,4,'Level 8','tier-lo'],
-];
+const TIERS=[[4,32,5,'Grand Slam','tier-gs'],[12,32,5,'Level 2','tier-2'],[28,16,4,'Level 3','tier-3'],[60,16,4,'Level 4','tier-4'],[124,16,4,'Level 5','tier-lo'],[252,16,4,'Level 6','tier-lo'],[508,16,4,'Level 7','tier-lo'],[9999,16,4,'Level 8','tier-lo']];
+const PTS={'Grand Slam':[2000,1000,600,400,200,100],'Level 2':[1000,500,300,200,100,50],'Level 3':[400,200,120,80,40,0],'Level 4':[200,100,60,40,20,0],'Level 5':[100,50,30,20,10,0],'Level 6':[50,25,15,10,5,0],'Level 7':[25,12,8,5,2,0],'Level 8':[10,5,3,2,1,0]};
 
-// Points per tier: [winner, runner-up, 3rd, 4th, QF losers, R16 losers]
-const POINTS={
-  'Grand Slam':[2000,1000,600,400,200,100],
-  'Level 2':[1000,500,300,200,100,50],
-  'Level 3':[400,200,120,80,40,0],
-  'Level 4':[200,100,60,40,20,0],
-  'Level 5':[100,50,30,20,10,0],
-  'Level 6':[50,25,15,10,5,0],
-  'Level 7':[25,12,8,5,2,0],
-  'Level 8':[10,5,3,2,1,0],
+// Flags — Wikimedia Commons via Special:FilePath
+const FP='https://commons.wikimedia.org/wiki/Special:FilePath/';
+const COM_FLAGS={
+  'Madrid':'Flag_of_the_Community_of_Madrid.svg',
+  'Catalunya':'Flag_of_Catalonia.svg',
+  'Andalucía':'Flag_of_Andaluc%C3%ADa.svg',
+  'Com. Valenciana':'Flag_of_the_Valencian_Community_(2x3).svg',
+  'Aragón':'Flag_of_Aragon.svg',
+  'Castilla y León':'Flag_of_Castile_and_Le%C3%B3n.svg',
+  'Galicia':'Flag_of_Galicia.svg',
+  'Euskadi':'Flag_of_the_Basque_Country.svg',
+  'Castilla-La Mancha':'Flag_of_Castile-La_Mancha.svg',
+  'Canarias':'Flag_of_the_Canary_Islands.svg',
+  'Murcia':'Flag_of_the_Region_of_Murcia.svg',
+  'Illes Balears':'Flag_of_the_Balearic_Islands.svg',
+  'Asturias':'Flag_of_Asturias.svg',
+  'Navarra':'Flag_of_Navarre.svg',
+  'Extremadura':'Flag_of_Extremadura_(with_coat_of_arms).svg',
+  'Cantabria':'Flag_of_Cantabria.svg',
+  'La Rioja':'Flag_of_La_Rioja_(with_coat_of_arms).svg',
+  'Ceuta':'Flag_of_Ceuta.svg',
+  'Melilla':'Flag_of_Melilla.svg',
 };
+const PROV_FLAGS={
+  'Almería':'Flag_Almer%C3%ADa_Province.svg',
+  'Cádiz':'Flag_C%C3%A1diz_Province.svg',
+  'Málaga':'Flag_M%C3%A1laga_Province.svg',
+  'Sevilla':'Flag_of_Diputacion_de_Sevilla_Spain.svg',
+  'Huesca':'Flag_of_Huesca_(province).svg',
+  'Teruel':'Flag_of_Teruel_(province).svg',
+  'Ciudad Real':'Flag_Ciudad_Real_Province.svg',
+  'Cuenca':'Flag_Cuenca_Province.svg',
+  'Guadalajara':'Flag_Guadalajara_Province.svg',
+  'Burgos':'Flag_Burgos_Province.svg',
+  'Segovia':'Flag_Segovia_province.svg',
+  'Soria':'Flag_Soria_province.svg',
+  'Barcelona':'Flag_of_Barcelona_(province).svg',
+  'Cáceres':'Flag_of_the_province_of_C%C3%A1ceres.svg',
+  'Lugo':'Flag_of_Lugo_province.svg',
+  'Pontevedra':'Flag_Pontevedra_Province.svg',
+  'Álava':'Flag_of_%C3%81lava.svg',
+  'Guipúzcoa':'Flag_of_Guip%C3%BAzcoa.svg',
+  'Las Palmas':'Flag_of_the_Canary_Islands.svg',
+  'Santa Cruz de Tenerife':'Flag_of_the_Canary_Islands.svg',
+  'Zaragoza':'Flag_of_Aragon.svg',
+};
+function flagUrl(file,w){return FP+file+'?width='+w}
+function flagImg(com,prov,size){
+  const s=size||14;
+  // Try provincia flag first, fall back to comunidad
+  const pf=prov&&PROV_FLAGS[prov];
+  const cf=COM_FLAGS[com];
+  const file=pf||cf;
+  if(!file)return'';
+  return`<img src="${flagUrl(file,s*2)}" width="${s}" height="${Math.round(s*0.67)}" style="vertical-align:middle;margin-right:2px;border-radius:1px;object-fit:cover" onerror="this.style.display='none'" loading="lazy">`;
+}
+function regBadge(com,prov){
+  return flagImg(com,prov,14);
+}
+function comFlag(com,size){return flagImg(com,null,size||14)}
+
+// Date helpers
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_DAYS=[31,28,31,30,31,30,31,31,30,31,30,31];
+function dayToDate(d){
+  let m=0,rem=d;
+  while(m<12&&rem>MONTH_DAYS[m]){rem-=MONTH_DAYS[m];m++}
+  return`${MONTHS[m]} ${rem}`;
+}
+function dayToDateShort(d){
+  let m=0,rem=d;
+  while(m<12&&rem>MONTH_DAYS[m]){rem-=MONTH_DAYS[m];m++}
+  return`${rem}/${m+1}`;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-let allTeams=[];        // [{name,comunidad,provincia,value,startValue}]
-let tournaments=[];     // [{id,hostIdx,tier,label,css,teamCount,days,startDay,teams:[],bracket:[],results:{},winner,runnerUp,third,fourth,complete}]
-let calendar=[];        // day 1-365 → [tournamentIds active that day]
-let currentDay=0;       // 0 = not started, 1-365
-let points={};          // {teamIdx: totalPoints}
-let teamStats={};       // {teamIdx: {played,wins,losses,tourneys,tourneysPlayed}}
-let seasonComplete=false;
+let allTeams=[];
+let tournaments=[];
+let calendar=[];
+let currentDay=0;
+let pts={};
+let stats={};
+let seasonDone=false;
+// Game-by-game queue
+let dayQueue=[];    // [{tournId, round, matchIdx, team1, team2}]
+let queuePos=0;     // current position in dayQueue
+let daySimmed=false;
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 function fmt(n){return n.toLocaleString('es-ES')}
 function randInt(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function getTier(r){for(const[mx,tc,d,l,c]of TIERS)if(r<=mx)return{teamCount:tc,days:d,label:l,css:c};return{teamCount:16,days:4,label:'Level 8',css:'tier-lo'}}
+function isTop12(t){return t.label==='Grand Slam'||t.label==='Level 2'}
+function totalRounds(t){return t.teamCount===32?5:4}
 
 // ═══════════════════════════════════════════════════════════════
 // CSV
 // ═══════════════════════════════════════════════════════════════
-function parseCSVRow(line){
-  const r=[];let c='',q=false;
-  for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c.trim());c=''}else c+=ch}
-  r.push(c.trim());return r;
-}
+function parseCSVRow(l){const r=[];let c='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c.trim());c=''}else c+=ch}r.push(c.trim());return r}
 function parseCSV(text){
   const lines=text.split('\n').map(l=>l.replace(/\r/g,'').trim()).filter(l=>l);
   if(lines.length<2)return[];
   const rows=[];
-  for(let i=1;i<lines.length;i++){
-    const c=parseCSVRow(lines[i]);
-    if(c.length>=4){
-      const val=parseInt(c[3].replace(/[.,\s"]/g,''),10);
-      if(!isNaN(val))rows.push({comunidad:c[0].replace(/"/g,''),provincia:c[1].replace(/"/g,''),name:c[2].replace(/"/g,''),value:val});
-    }
-  }
+  for(let i=1;i<lines.length;i++){const c=parseCSVRow(lines[i]);if(c.length>=4){const v=parseInt(c[3].replace(/[.,\s"]/g,''),10);if(!isNaN(v))rows.push({comunidad:c[0].replace(/"/g,''),provincia:c[1].replace(/"/g,''),name:c[2].replace(/"/g,''),value:v})}}
   return rows.sort((a,b)=>b.value-a.value);
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TIER CLASSIFICATION
-// ═══════════════════════════════════════════════════════════════
-function getTier(hostRank){
-  for(const[maxR,tc,days,label,css]of TIERS){
-    if(hostRank<=maxR)return{teamCount:tc,days,label,css};
-  }
-  return{teamCount:16,days:4,label:'Level 8',css:'tier-lo'};
-}
-
-function isTop12(t){return t.label==='Grand Slam'||t.label==='Level 2'}
-
-// ═══════════════════════════════════════════════════════════════
-// CALENDAR GENERATION
+// CALENDAR — even distribution
 // ═══════════════════════════════════════════════════════════════
 function buildCalendar(){
-  calendar=Array.from({length:SEASON_DAYS+1},()=>[]);
+  calendar=Array.from({length:DAYS+1},()=>[]);
 
-  // 1) Place Top 12 tournaments (no overlap, 7-day cooling, spread across season)
+  // 1) Top 12: evenly spaced, ~30 days apart
   const top12=tournaments.filter(t=>isTop12(t));
-  const spacing=Math.floor(SEASON_DAYS/(top12.length+1));
-  let nextAvail=spacing;
-  // Interleave GS and L2: GS1, L2-1, L2-2, GS2, L2-3, L2-4, GS3, L2-5, L2-6, GS4, L2-7, L2-8
+  // Interleave GS and L2
   const gs=top12.filter(t=>t.label==='Grand Slam');
   const l2=top12.filter(t=>t.label==='Level 2');
   const ordered=[];
@@ -209,465 +250,380 @@ function buildCalendar(){
     else if(li<l2.length)ordered.push(l2[li++]);
     else if(gi<gs.length)ordered.push(gs[gi++]);
   }
-
-  nextAvail=14; // start after 2 weeks
+  const topSpacing=Math.floor((DAYS-20)/(ordered.length));
+  let nextDay=10;
   ordered.forEach(t=>{
-    t.startDay=nextAvail;
-    for(let d=0;d<t.days;d++)calendar[nextAvail+d].push(t.id);
-    nextAvail+=t.days+TOP12_COOLING;
+    t.startDay=nextDay;
+    for(let d=0;d<t.days;d++)calendar[nextDay+d].push(t.id);
+    nextDay+=topSpacing;
   });
 
-  // 2) Place remaining tournaments, avoiding same-province overlap, spreading evenly
-  const rest=tournaments.filter(t=>!isTop12(t));
-  // Shuffle to avoid patterns, then sort by tier (higher tiers earlier)
-  rest.sort((a,b)=>{
-    const ta=TIERS.findIndex(([mr])=>a.hostIdx<mr);
-    const tb=TIERS.findIndex(([mr])=>b.hostIdx<mr);
-    return ta-tb||Math.random()-0.5;
+  // Build set of blocked days (top12 running + cooling)
+  const blocked=new Set();
+  ordered.forEach(t=>{
+    for(let d=t.startDay;d<t.startDay+t.days;d++)blocked.add(d);
+    // Cooling before and after
+    for(let d=Math.max(1,t.startDay-COOL);d<t.startDay;d++)blocked.add(d);
+    for(let d=t.startDay+t.days;d<Math.min(DAYS+1,t.startDay+t.days+COOL);d++)blocked.add(d);
   });
+
+  // 2) Remaining: distribute evenly using round-robin over available days
+  const rest=tournaments.filter(t=>!isTop12(t));
+  // Sort: higher tiers first, then shuffle within tier
+  rest.sort((a,b)=>{
+    const ta=TIERS.findIndex(([mx])=>a.hostIdx+1<=mx);
+    const tb=TIERS.findIndex(([mx])=>b.hostIdx+1<=mx);
+    if(ta!==tb)return ta-tb;
+    return Math.random()-0.5;
+  });
+
+  // Collect available slots (non-blocked days)
+  const availDays=[];
+  for(let d=1;d<=DAYS;d++)if(!blocked.has(d))availDays.push(d);
+
+  // For each tournament, find best starting day (even spread + avoid same-province)
+  // Use a load counter per day to keep it even
+  const dayLoad={};
+  const provDays={}; // {provincia: Set of days with tournaments}
 
   rest.forEach(t=>{
+    const hostProv=allTeams[t.hostIdx].provincia;
+    const hostCom=allTeams[t.hostIdx].comunidad;
     let bestDay=1,bestScore=Infinity;
-    // Try each possible start day, pick the one with least conflicts
-    for(let d=1;d<=SEASON_DAYS-t.days+1;d++){
-      // Can't overlap with top 12 cooling periods
-      let blocked=false;
-      for(let dd=0;dd<t.days;dd++){
-        const dayTourns=calendar[d+dd];
-        // Check if any top12 is running or cooling
-        if(dayTourns.some(tid=>{const ot=tournaments[tid];return isTop12(ot)})){blocked=true;break}
-      }
-      if(blocked)continue;
 
-      // Score: penalize same-province/comunidad overlap, prefer even distribution
+    // Sample evenly across the year
+    const step=Math.max(1,Math.floor(availDays.length/50));
+    for(let si=0;si<availDays.length;si+=step){
+      const d=availDays[si];
+      if(d+t.days-1>DAYS)continue;
+      // Check no blocked days in range
+      let ok=true;
+      for(let dd=0;dd<t.days;dd++)if(blocked.has(d+dd)){ok=false;break}
+      if(!ok)continue;
+
       let score=0;
       for(let dd=0;dd<t.days;dd++){
-        calendar[d+dd].forEach(tid=>{
-          const ot=tournaments[tid];
-          if(allTeams[ot.hostIdx].provincia===allTeams[t.hostIdx].provincia)score+=100;
-          else if(allTeams[ot.hostIdx].comunidad===allTeams[t.hostIdx].comunidad)score+=30;
-          score+=1; // slight penalty for busy days
-        });
+        score+=(dayLoad[d+dd]||0)*5;
+        // Same-province penalty
+        if(provDays[hostProv]?.has(d+dd))score+=200;
+        if(!provDays[hostProv]){
+          const comTeams=calendar[d+dd].map(id=>allTeams[tournaments[id].hostIdx].comunidad);
+          if(comTeams.includes(hostCom))score+=50;
+        }
       }
       if(score<bestScore){bestScore=score;bestDay=d}
     }
+    // Also try nearby days for fine-tuning
+    for(let d=Math.max(1,bestDay-10);d<=Math.min(DAYS-t.days+1,bestDay+10);d++){
+      let ok=true;
+      for(let dd=0;dd<t.days;dd++)if(blocked.has(d+dd)){ok=false;break}
+      if(!ok)continue;
+      let score=0;
+      for(let dd=0;dd<t.days;dd++){
+        score+=(dayLoad[d+dd]||0)*5;
+        if(provDays[hostProv]?.has(d+dd))score+=200;
+      }
+      if(score<bestScore){bestScore=score;bestDay=d}
+    }
+
     t.startDay=bestDay;
-    for(let d=0;d<t.days;d++)calendar[bestDay+d].push(t.id);
+    for(let d=0;d<t.days;d++){
+      calendar[bestDay+d].push(t.id);
+      dayLoad[bestDay+d]=(dayLoad[bestDay+d]||0)+1;
+      if(!provDays[hostProv])provDays[hostProv]=new Set();
+      provDays[hostProv].add(bestDay+d);
+    }
   });
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TEAM SELECTION FOR TOURNAMENTS
+// TEAM SELECTION
 // ═══════════════════════════════════════════════════════════════
-function getRankedTeams(){
-  return allTeams.map((_,i)=>i).sort((a,b)=>(points[b]||0)-(points[a]||0)||allTeams[b].value-allTeams[a].value);
-}
+function getRanked(){return allTeams.map((_,i)=>i).sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value)}
+function initStats(i){if(!stats[i])stats[i]={played:0,wins:0,losses:0,tp:0,busy:0}}
 
-function selectTeams(tourn){
-  const host=allTeams[tourn.hostIdx];
-  const ranked=getRankedTeams();
-  const n=tourn.teamCount;
+function selectTeams(t){
+  const host=allTeams[t.hostIdx];
+  const ranked=getRanked();
+  const n=t.teamCount;
+  const avail=i=>{initStats(i);return stats[i].busy<t.startDay};
+  const availCool=i=>{initStats(i);return stats[i].busy<=t.startDay-COOL};
+  const fn=isTop12(t)?availCool:avail;
+  const sel=new Set([t.hostIdx]);
 
-  // Check availability: team can't be in another active tournament
-  function isAvail(tIdx){
-    if(!teamStats[tIdx])teamStats[tIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
-    return teamStats[tIdx].busyUntil<tourn.startDay;
-  }
-
-  // For top 12: check cooling — team must not be in a tournament ending within 7 days before
-  function isAvailTop12(tIdx){
-    if(!isAvail(tIdx))return false;
-    // Also check if team has a tournament ending within cooling period before this one
-    const coolStart=tourn.startDay-TOP12_COOLING;
-    return(teamStats[tIdx].busyUntil||0)<=coolStart;
-  }
-
-  const availFn=isTop12(tourn)?isAvailTop12:isAvail;
-  const selected=new Set();
-  selected.add(tourn.hostIdx); // host always participates
-
-  if(tourn.label==='Grand Slam'){
-    // Top 32 ranked available teams
-    for(const tIdx of ranked){
-      if(selected.size>=n)break;
-      if(!selected.has(tIdx)&&availFn(tIdx))selected.add(tIdx);
-    }
-  }else if(tourn.label==='Level 2'){
-    // Top 24 available + 8 regional invites
-    let mainCount=0;
-    for(const tIdx of ranked){
-      if(selected.size>=n)break;
-      if(mainCount>=24)break;
-      if(!selected.has(tIdx)&&availFn(tIdx)){selected.add(tIdx);mainCount++}
-    }
-    // Regional invites: teams from host's comunidad not yet selected
-    const regional=ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!selected.has(i)&&availFn(i));
-    regional.forEach(tIdx=>{if(selected.size<n)selected.add(tIdx)});
-    // Fill remaining with any available
-    for(const tIdx of ranked){
-      if(selected.size>=n)break;
-      if(!selected.has(tIdx)&&availFn(tIdx))selected.add(tIdx);
-    }
+  if(t.label==='Grand Slam'){
+    for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
+  }else if(t.label==='Level 2'){
+    let mc=0;
+    for(const i of ranked){if(sel.size>=n||mc>=24)break;if(!sel.has(i)&&fn(i)){sel.add(i);mc++}}
+    ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!sel.has(i)&&fn(i)).forEach(i=>{if(sel.size<n)sel.add(i)});
+    for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
   }else{
-    // 8 local (same provincia/comunidad) + 8 random (fewest tournaments, with region affinity)
-    const local=ranked.filter(i=>
-      (allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad)
-      &&!selected.has(i)&&isAvail(i)
-    );
-    local.slice(0,7).forEach(tIdx=>selected.add(tIdx)); // 7 + host = 8 local
-
-    // Random: sort by fewest tourneys played, with affinity for region
-    const candidates=ranked.filter(i=>!selected.has(i)&&isAvail(i));
-    candidates.sort((a,b)=>{
-      const sa=teamStats[a]?.tourneysPlayed||0,sb=teamStats[b]?.tourneysPlayed||0;
+    // 8 local
+    const local=ranked.filter(i=>(allTeams[i].provincia===host.provincia||allTeams[i].comunidad===host.comunidad)&&!sel.has(i)&&avail(i));
+    local.slice(0,n/2-1).forEach(i=>sel.add(i));
+    // 8 random: fewest tournaments, with region affinity
+    const cands=ranked.filter(i=>!sel.has(i)&&avail(i));
+    cands.sort((a,b)=>{
+      const sa=stats[a]?.tp||0,sb=stats[b]?.tp||0;
       if(sa!==sb)return sa-sb;
-      // Affinity: same region teams get slight priority
+      // Affinity for host region
       const aa=allTeams[a].comunidad===host.comunidad?-1:0;
       const ab=allTeams[b].comunidad===host.comunidad?-1:0;
       return aa-ab||Math.random()-0.5;
     });
-    candidates.slice(0,n-selected.size).forEach(tIdx=>selected.add(tIdx));
+    cands.slice(0,n-sel.size).forEach(i=>sel.add(i));
   }
 
-  // Convert to array, seed by ranking (best ranked = seed 1)
-  const teamArr=[...selected];
-  teamArr.sort((a,b)=>(points[b]||0)-(points[a]||0)||allTeams[b].value-allTeams[a].value);
-
-  // Mark teams as busy
-  teamArr.forEach(tIdx=>{
-    if(!teamStats[tIdx])teamStats[tIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
-    teamStats[tIdx].busyUntil=tourn.startDay+tourn.days-1;
-    teamStats[tIdx].tourneysPlayed++;
-  });
-
-  tourn.teams=teamArr;
-  // Build seeded bracket (1v16, 8v9, 5v12, 4v13, etc.)
-  tourn.bracket=buildBracket(teamArr);
+  const arr=[...sel].sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
+  arr.forEach(i=>{initStats(i);stats[i].busy=t.startDay+t.days-1;stats[i].tp++});
+  t.teams=arr;
+  t.bracket=buildBracket(arr);
 }
 
 function buildBracket(teams){
   const n=teams.length;
-  // Standard seeding for elimination bracket
-  if(n===32){
-    const seeds=[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,23,3,30,14,19,6,27,11,22];
-    return seeds.map(s=>teams[s-1]!==undefined?teams[s-1]:null);
-  }
-  if(n===16){
-    const seeds=[1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11];
-    return seeds.map(s=>teams[s-1]!==undefined?teams[s-1]:null);
-  }
-  return teams;
+  const seeds=n===32?[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,23,3,30,14,19,6,27,11,22]
+    :[1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11];
+  return seeds.map(s=>teams[s-1]!=null?teams[s-1]:null);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // MATCH ENGINE
 // ═══════════════════════════════════════════════════════════════
-function simulateMatch(idx1,idx2){
-  const t1=allTeams[idx1],t2=allTeams[idx2];
+function simMatch(a,b){
+  const t1=allTeams[a],t2=allTeams[b];
   const best=Math.max(t1.value,t2.value),worst=Math.min(t1.value,t2.value);
-  const ratio=worst/best;
-  const threshold=Math.floor(ratio*100);
+  const ratio=worst/best,thr=Math.floor(ratio*100);
   const roll=Math.floor(Math.random()*200)+1;
-  const worstWins=roll<=threshold;
-  const bestIdx=t1.value>=t2.value?idx1:idx2;
-  const worstIdx=t1.value>=t2.value?idx2:idx1;
-  const winnerIdx=worstWins?worstIdx:bestIdx;
-  const loserIdx=winnerIdx===idx1?idx2:idx1;
-  // Steal
-  let stolen=0,stealBlocked=false;
-  const lr=allTeams[loserIdx].value/allTeams[winnerIdx].value;
-  if(lr>0.5){stolen=Math.round(allTeams[loserIdx].value*0.1);allTeams[winnerIdx].value+=stolen;allTeams[loserIdx].value-=stolen}
-  else stealBlocked=true;
-  // Stats
-  if(!teamStats[winnerIdx])teamStats[winnerIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
-  if(!teamStats[loserIdx])teamStats[loserIdx]={played:0,wins:0,losses:0,tourneysPlayed:0,busyUntil:0};
-  teamStats[winnerIdx].played++;teamStats[winnerIdx].wins++;
-  teamStats[loserIdx].played++;teamStats[loserIdx].losses++;
-  return{idx1,idx2,winnerIdx,loserIdx,roll,threshold,worstWins,stolen,stealBlocked,
-    name1:t1.name,name2:t2.name,winnerName:allTeams[winnerIdx].name,loserName:allTeams[loserIdx].name};
+  const ww=roll<=thr;
+  const bi=t1.value>=t2.value?a:b,wi_=t1.value>=t2.value?b:a;
+  const winI=ww?wi_:bi,losI=winI===a?b:a;
+  let stolen=0,sb=false;
+  const lr=allTeams[losI].value/allTeams[winI].value;
+  if(lr>0.5){stolen=Math.round(allTeams[losI].value*0.1);allTeams[winI].value+=stolen;allTeams[losI].value-=stolen}else sb=true;
+  initStats(winI);initStats(losI);
+  stats[winI].played++;stats[winI].wins++;stats[losI].played++;stats[losI].losses++;
+  return{a,b,winI,losI,roll,thr,ww,stolen,sb,n1:t1.name,n2:t2.name,wn:allTeams[winI].name,ln:allTeams[losI].name};
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TOURNAMENT ROUND SIM
+// TOURNAMENT ROUND LOGIC
 // ═══════════════════════════════════════════════════════════════
-function getTournamentRound(tourn){
-  // How many rounds completed?
-  const totalRounds=tourn.teamCount===32?5:4;
-  const roundsDone=Object.keys(tourn.results).length;
-  return roundsDone; // 0-indexed
+function getAlive(t){
+  let alive=[...t.bracket].filter(x=>x!=null);
+  for(let r=0;r<10;r++){
+    if(!t.results[r])break;
+    alive=t.results[r].map(m=>m.winI);
+  }
+  return alive;
 }
 
-function simTournamentDay(tourn){
-  const roundIdx=getTournamentRound(tourn);
-  const n=tourn.teamCount;
-  const totalRounds=n===32?5:4;
-  if(roundIdx>=totalRounds)return; // already done
-
-  // Get current alive teams from bracket progression
-  let alive=tourn.bracket.filter(t=>t!==null);
-  // Apply previous results to narrow down
-  for(let r=0;r<roundIdx;r++){
-    const rr=tourn.results[r];
-    if(rr)alive=rr.map(m=>m.winnerIdx);
-  }
-
-  const roundName=roundIdx===totalRounds-1?'Final':roundIdx===totalRounds-2?'Semifinal':roundIdx===totalRounds-3?'Quarterfinal':'Round '+(roundIdx+1);
-
-  // Pair up
-  const matches=[];
-  for(let i=0;i<alive.length;i+=2){
-    if(i+1<alive.length){
-      matches.push(simulateMatch(alive[i],alive[i+1]));
+function buildDayQueue(){
+  dayQueue=[];queuePos=0;
+  const todayIds=calendar[currentDay]||[];
+  todayIds.forEach(tid=>{
+    const t=tournaments[tid];
+    if(t.complete)return;
+    if(!t.teams||!t.teams.length)selectTeams(t);
+    const rIdx=Object.keys(t.results).filter(k=>k!=='bronze').length;
+    const tr=totalRounds(t);
+    if(rIdx>=tr)return;
+    const alive=getAlive(t);
+    const roundName=rIdx===tr-1?'Final':rIdx===tr-2?'Semi':rIdx===tr-3?'QF':'R'+(rIdx+1);
+    for(let i=0;i<alive.length;i+=2){
+      if(i+1<alive.length){
+        dayQueue.push({tid,rIdx,roundName,t1:alive[i],t2:alive[i+1],result:null});
+      }
     }
-  }
-
-  tourn.results[roundIdx]={matches,roundName};
-
-  // Bronze match: after semifinals (round totalRounds-2), the two losers play
-  if(roundIdx===totalRounds-2){
-    const sfLosers=matches.map(m=>m.loserIdx);
-    if(sfLosers.length===2){
-      const bronze=simulateMatch(sfLosers[0],sfLosers[1]);
-      tourn.results['bronze']={matches:[bronze],roundName:'Bronze Match'};
-      tourn.third=bronze.winnerIdx;
-      tourn.fourth=bronze.loserIdx;
+    // Bronze match if semifinals just happened
+    if(rIdx===tr-1&&t.results[tr-2]){
+      const sfLosers=t.results[tr-2].map(m=>m.losI);
+      if(sfLosers.length===2&&!t.results.bronze){
+        dayQueue.push({tid,rIdx:'bronze',roundName:'Bronze',t1:sfLosers[0],t2:sfLosers[1],result:null});
+      }
     }
-  }
+  });
+  daySimmed=dayQueue.length===0;
+}
 
-  // After final
-  if(roundIdx===totalRounds-1&&matches.length>0){
-    tourn.winner=matches[0].winnerIdx;
-    tourn.runnerUp=matches[0].loserIdx;
-    tourn.complete=true;
-    awardPoints(tourn);
-    // Free eliminated teams
-    tourn.teams.forEach(tIdx=>{
-      if(teamStats[tIdx])teamStats[tIdx].busyUntil=0;
-    });
+function playNextInQueue(){
+  if(queuePos>=dayQueue.length)return;
+  const q=dayQueue[queuePos];
+  const res=simMatch(q.t1,q.t2);
+  q.result=res;
+  // Store in tournament
+  const t=tournaments[q.tid];
+  if(q.rIdx==='bronze'){
+    t.results.bronze=[res];
+    t.third=res.winI;t.fourth=res.losI;
+  }else{
+    if(!t.results[q.rIdx])t.results[q.rIdx]=[];
+    t.results[q.rIdx].push(res);
   }
+  queuePos++;
+  // Check if tournament round complete → check if final done
+  const tr=totalRounds(t);
+  const roundMatches=dayQueue.filter(x=>x.tid===q.tid&&x.rIdx===q.rIdx);
+  if(roundMatches.every(x=>x.result)&&q.rIdx===tr-1){
+    t.winner=res.winI;t.runnerUp=res.losI;t.complete=true;
+    awardPoints(t);
+    t.teams.forEach(i=>{initStats(i);stats[i].busy=0});
+  }
+  if(queuePos>=dayQueue.length)daySimmed=true;
+  saveState();
+  renderAll();
+}
+
+function simRestOfDay(){while(queuePos<dayQueue.length)playNextInQueue()}
+
+function advanceDay(){
+  if(seasonDone)return;
+  currentDay++;
+  if(currentDay>DAYS){seasonDone=true;saveState();renderAll();return}
+  buildDayQueue();
+  saveState();renderAll();
 }
 
 // ═══════════════════════════════════════════════════════════════
 // POINTS
 // ═══════════════════════════════════════════════════════════════
-function awardPoints(tourn){
-  const pts=POINTS[tourn.label]||[10,5,3,2,1,0];
-  if(tourn.winner!=null){points[tourn.winner]=(points[tourn.winner]||0)+pts[0]}
-  if(tourn.runnerUp!=null){points[tourn.runnerUp]=(points[tourn.runnerUp]||0)+pts[1]}
-  if(tourn.third!=null){points[tourn.third]=(points[tourn.third]||0)+pts[2]}
-  if(tourn.fourth!=null){points[tourn.fourth]=(points[tourn.fourth]||0)+pts[3]}
-  // QF losers (round totalRounds-3)
-  const totalR=tourn.teamCount===32?5:4;
-  const qfRound=tourn.results[totalR-3];
-  if(qfRound){
-    qfRound.matches.forEach(m=>{
-      if(m.loserIdx!==tourn.third&&m.loserIdx!==tourn.fourth){
-        points[m.loserIdx]=(points[m.loserIdx]||0)+pts[4];
-      }
-    });
-  }
-  // R16 losers (only for 32-team)
-  if(tourn.teamCount===32){
-    const r16=tourn.results[0];
-    if(r16){r16.matches.forEach(m=>{points[m.loserIdx]=(points[m.loserIdx]||0)+pts[5]})}
-  }
+function awardPoints(t){
+  const p=PTS[t.label]||[10,5,3,2,1,0];
+  if(t.winner!=null)pts[t.winner]=(pts[t.winner]||0)+p[0];
+  if(t.runnerUp!=null)pts[t.runnerUp]=(pts[t.runnerUp]||0)+p[1];
+  if(t.third!=null)pts[t.third]=(pts[t.third]||0)+p[2];
+  if(t.fourth!=null)pts[t.fourth]=(pts[t.fourth]||0)+p[3];
+  const tr=totalRounds(t);
+  const qf=t.results[tr-3];
+  if(qf)qf.forEach(m=>{if(m.losI!==t.third&&m.losI!==t.fourth)pts[m.losI]=(pts[m.losI]||0)+p[4]});
+  if(t.teamCount===32){const r16=t.results[0];if(r16)r16.forEach(m=>{pts[m.losI]=(pts[m.losI]||0)+p[5]})}
 }
-
-// ═══════════════════════════════════════════════════════════════
-// SEASON SIM
-// ═══════════════════════════════════════════════════════════════
-function advanceDay(){
-  if(currentDay>=SEASON_DAYS){seasonComplete=true;return}
-  currentDay++;
-  const todayTournIds=calendar[currentDay]||[];
-
-  todayTournIds.forEach(tid=>{
-    const t=tournaments[tid];
-    if(t.complete)return;
-    // If tournament hasn't started yet (first day), select teams
-    if(!t.teams||t.teams.length===0){
-      selectTeams(t);
-    }
-    // Sim one round
-    simTournamentDay(t);
-  });
-
-  if(currentDay>=SEASON_DAYS)seasonComplete=true;
-  saveState();
-}
-
-function advanceDays(n){for(let i=0;i<n&&!seasonComplete;i++)advanceDay()}
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
 async function initSeason(){
   document.getElementById('h-info').textContent='Fetching teams...';
-  let csvData;
   try{
-    const r=await fetch(CSV_URL);
-    const text=await r.text();
-    csvData=parseCSV(text);
-  }catch(e){
-    document.getElementById('h-info').textContent='⚠️ Could not fetch teams. Check connection.';
-    return;
-  }
-  if(!csvData||csvData.length<8){
-    document.getElementById('h-info').textContent='⚠️ Not enough teams in sheet ('+((csvData||[]).length)+')';
-    return;
-  }
-  allTeams=csvData.map(t=>({...t,startValue:t.value}));
-
-  // Create tournaments
-  tournaments=allTeams.map((t,i)=>{
-    const tier=getTier(i+1);
-    return{id:i,hostIdx:i,tier:tier.label,label:tier.label,css:tier.css,
-      teamCount:tier.teamCount,days:tier.days,startDay:0,
-      teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false};
-  });
-
-  // Build calendar
+    const r=await fetch(CSV_URL);const text=await r.text();
+    const data=parseCSV(text);
+    if(!data||data.length<8){document.getElementById('h-info').textContent='⚠️ Not enough teams ('+((data||[]).length)+')';return}
+    allTeams=data.map(t=>({...t,startValue:t.value}));
+  }catch(e){document.getElementById('h-info').textContent='⚠️ Fetch failed';return}
+  tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
-
-  // Reset state
-  currentDay=0;points={};teamStats={};seasonComplete=false;
-  document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments · Ready`;
-  saveState();
-  renderAll();
+  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;
+  document.getElementById('h-info').textContent=`${allTeams.length} teams · ${tournaments.length} tournaments`;
+  saveState();renderAll();
 }
-
-function resetSeason(){
-  localStorage.removeItem(SAVE_KEY);
-  initSeason();
-}
+function resetSeason(){localStorage.removeItem(SAVE_KEY);initSeason()}
 
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-function saveState(){
-  try{
-    localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,points,teamStats,seasonComplete}));
-  }catch(e){console.warn('Save failed',e)}
-}
-function loadState(){
-  try{
-    const raw=localStorage.getItem(SAVE_KEY);
-    if(!raw)return false;
-    const s=JSON.parse(raw);
-    allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];
-    currentDay=s.currentDay||0;points=s.points||{};teamStats=s.teamStats||{};seasonComplete=s.seasonComplete||false;
-    return allTeams.length>0;
-  }catch(e){return false}
+function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed}))}catch(e){}}
+function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;return allTeams.length>0}catch(e){return false}}
+
+// ═══════════════════════════════════════════════════════════════
+// TABS + RENDER
+// ═══════════════════════════════════════════════════════════════
+function showTab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active')}
+function renderAll(){renderSeason();renderCalendar();renderRankings();renderRegional();renderTournaments();renderTeamsTab();
+  const done=tournaments.filter(t=>t.complete).length;
+  document.getElementById('h-info').textContent=`${dayToDate(currentDay||1)} (Day ${currentDay}) · ${done}/${tournaments.length} done · ${allTeams.length} teams`;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TABS
-// ═══════════════════════════════════════════════════════════════
-function showTab(id){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active');
-}
-function renderAll(){renderSeason();renderCalendar();renderRankings();renderTournaments();renderTeams();
-  document.getElementById('h-info').textContent=`Day ${currentDay}/${SEASON_DAYS} · ${allTeams.length} teams · ${tournaments.filter(t=>t.complete).length}/${tournaments.length} done`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RENDER: SEASON
+// RENDER: SEASON (game-by-game)
 // ═══════════════════════════════════════════════════════════════
 function renderSeason(){
   const el=document.getElementById('tab-season');
   let h='';
-
   h+=`<div class="controls">`;
-  if(!seasonComplete){
-    h+=`<button class="btn" onclick="advanceDay();renderAll()">▶ Next Day</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="advanceDays(7);renderAll()">+7 Days</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="advanceDays(30);renderAll()">+30 Days</button>`;
-    h+=`<button class="btn btn-outline btn-sm" onclick="advanceDays(365);renderAll()">Sim All</button>`;
+  if(currentDay===0){
+    h+=`<button class="btn" onclick="advanceDay()">▶ Start Season (${dayToDate(1)})</button>`;
+  }else if(seasonDone){
+    h+=`<div class="banner banner-gold" style="margin:0">🏆 Season Complete!</div>`;
+  }else if(!daySimmed){
+    h+=`<button class="btn" onclick="playNextInQueue()">▶ Play Next Match</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="simRestOfDay();renderAll()">Sim Rest of Day</button>`;
   }else{
-    h+=`<div class="banner banner-gold">🏆 Season Complete!</div>`;
+    h+=`<button class="btn" onclick="advanceDay()">▶ Next Day (${dayToDate(currentDay+1)})</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<7&&!seasonDone;i++){advanceDay();if(!daySimmed)simRestOfDay()}renderAll()">+7 Days</button>`;
+    h+=`<button class="btn btn-outline btn-sm" onclick="for(let i=0;i<30&&!seasonDone;i++){advanceDay();if(!daySimmed)simRestOfDay()}renderAll()">+30 Days</button>`;
   }
   h+=`<button class="btn btn-reset btn-sm" onclick="resetSeason()" style="margin-left:auto">Reset</button>`;
   h+=`</div>`;
 
-  h+=`<div class="day-nav">
-    <h2>Day ${currentDay}</h2>
-    <span class="day-badge">${tournaments.filter(t=>t.complete).length} tournaments complete</span>
-  </div>`;
+  if(currentDay>0){
+    h+=`<div class="day-nav"><h2>${dayToDate(currentDay)}</h2><span class="day-badge">Day ${currentDay} · ${dayQueue.length} matches</span></div>`;
 
-  // Today's active tournaments
-  const todayIds=(calendar[currentDay]||[]);
-  const activeTourns=todayIds.map(id=>tournaments[id]).filter(t=>t&&t.teams&&t.teams.length>0);
+    // Group matches by tournament
+    const byTourn={};
+    dayQueue.forEach((q,i)=>{if(!byTourn[q.tid])byTourn[q.tid]=[];byTourn[q.tid].push({...q,qIdx:i})});
 
-  if(activeTourns.length>0){
-    h+=`<div class="section-title">Active Today (${activeTourns.length})</div>`;
-    activeTourns.forEach(t=>{h+=renderTournCard(t,true)});
-  }
-
-  // Recently completed
-  const recent=tournaments.filter(t=>t.complete&&t.startDay+t.days>=currentDay-3).slice(0,8);
-  if(recent.length){
-    h+=`<div class="section-title">Recently Completed</div>`;
-    recent.forEach(t=>{h+=renderTournCard(t,false)});
-  }
-
-  // Upcoming
-  const upcoming=tournaments.filter(t=>!t.complete&&t.startDay>currentDay&&t.startDay<=currentDay+7).slice(0,6);
-  if(upcoming.length){
-    h+=`<div class="section-title">Upcoming (next 7 days)</div>`;
-    upcoming.forEach(t=>{
-      h+=`<div class="tourn-card">
-        <div class="tourn-header">
-          <span class="tourn-name"><span class="tier-badge ${t.css}">${t.label}</span> ${allTeams[t.hostIdx].name}</span>
-          <span class="tourn-meta">Day ${t.startDay} · ${t.teamCount} teams · ${t.days}d</span>
-        </div>
+    for(const[tid,matches]of Object.entries(byTourn)){
+      const t=tournaments[tid];
+      const host=allTeams[t.hostIdx];
+      h+=`<div class="tourn-header-bar">
+        <span class="th-name">${regBadge(host.comunidad,host.provincia)}<span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
+        <span class="th-meta">${t.teamCount} teams · ${matches[0].roundName}${t.complete?' · 🏆 '+allTeams[t.winner].name:''}</span>
       </div>`;
-    });
+
+      matches.forEach(q=>{
+        const isCur=!daySimmed&&q.qIdx===queuePos;
+        const t1=allTeams[q.t1],t2=allTeams[q.t2];
+        if(q.result){
+          const r=q.result;
+          const w1=r.winI===q.t1;
+          h+=`<div class="match-card played-m fade-in" id="mq-${q.qIdx}">
+            <div class="match-row">
+              <div class="match-team"><div>
+                <div class="mname">${regBadge(t1.comunidad,t1.provincia)}${r.n1} ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
+                <div class="mval">${fmt(t1.value)}</div>
+              </div></div>
+              <div class="match-vs">${q.roundName}</div>
+              <div class="match-team right"><div>
+                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}${r.n2}${regBadge(t2.comunidad,t2.provincia)}</div>
+                <div class="mval">${fmt(t2.value)}</div>
+              </div></div>
+            </div>
+            <div class="match-details">
+              <span class="tag">Thr: <b>${r.thr}/200</b></span>
+              <span class="tag">Roll: <b>${r.roll}</b></span>
+              <span class="tag">${r.ww?'🎲 Upset':'📊'}</span>
+              <span class="tag">${r.sb?'no steal':'<span style="color:var(--orange)">±'+fmt(r.stolen)+'</span>'}</span>
+            </div>
+          </div>`;
+        }else{
+          h+=`<div class="match-card${isCur?' current-m':''}" id="mq-${q.qIdx}">
+            <div class="match-row">
+              <div class="match-team"><div>
+                <div class="mname">${regBadge(t1.comunidad,t1.provincia)}${t1.name}</div>
+                <div class="mval">${fmt(t1.value)}</div>
+              </div></div>
+              <div class="match-vs">${isCur?'<span style="color:var(--gold)">NEXT</span>':q.roundName}</div>
+              <div class="match-team right"><div>
+                <div class="mname">${t2.name}${regBadge(t2.comunidad,t2.provincia)}</div>
+                <div class="mval">${fmt(t2.value)}</div>
+              </div></div>
+            </div>
+            ${isCur?'<div style="padding:8px 16px;border-top:1px solid var(--border)"><button class="btn btn-sm" onclick="playNextInQueue()">▶ Play</button> <button class="btn btn-outline btn-sm" onclick="simRestOfDay();renderAll()">Sim All Today</button></div>':''}
+          </div>`;
+        }
+      });
+    }
   }
 
   el.innerHTML=h;
-}
-
-function renderTournCard(t,showLatest){
-  const host=allTeams[t.hostIdx];
-  const totalR=t.teamCount===32?5:4;
-  const roundsDone=Object.keys(t.results).filter(k=>k!=='bronze').length;
-  let h=`<div class="tourn-card ${t.complete?'done-t':'active-t'} fade-in">
-    <div class="tourn-header">
-      <span class="tourn-name"><span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
-      <span class="tourn-meta">${t.complete?'🏆 '+allTeams[t.winner].name:'R'+roundsDone+'/'+totalR} · Day ${t.startDay}</span>
-    </div>`;
-
-  // Show latest round results
-  if(showLatest||t.complete){
-    const lastRound=t.results[roundsDone-1]||t.results[totalR-1];
-    const bronze=t.results['bronze'];
-    h+=`<div class="tourn-body">`;
-    if(lastRound){
-      h+=`<div style="font-size:.7rem;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px">${lastRound.roundName}</div>`;
-      lastRound.matches.forEach(m=>{
-        h+=`<div class="match-line">
-          <span><span class="mw">${m.winnerName}</span> def. <span class="ml">${m.loserName}</span></span>
-          <span class="roll-info">${m.roll}/${m.threshold}${m.worstWins?' 🎲':''}${m.stealBlocked?'':' ±'+fmt(m.stolen)}</span>
-        </div>`;
-      });
-    }
-    if(bronze){
-      h+=`<div style="font-size:.7rem;color:var(--muted);margin:6px 0 4px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Bronze</div>`;
-      bronze.matches.forEach(m=>{
-        h+=`<div class="match-line"><span><span class="mw">${m.winnerName}</span> def. <span class="ml">${m.loserName}</span></span><span class="roll-info">${m.roll}/${m.threshold}</span></div>`;
-      });
-    }
-    if(t.complete){
-      const pts=POINTS[t.label]||[];
-      h+=`<div style="margin-top:8px;font-size:.72rem;color:var(--muted)">🥇 ${allTeams[t.winner].name} (+${pts[0]}) · 🥈 ${allTeams[t.runnerUp].name} (+${pts[1]})${t.third!=null?' · 🥉 '+allTeams[t.third].name+' (+'+pts[2]+')':''}</div>`;
-    }
-    h+=`</div>`;
+  // Auto-scroll
+  if(dayQueue.length&&queuePos>0){
+    requestAnimationFrame(()=>{
+      const t=document.getElementById('mq-'+(queuePos<dayQueue.length?queuePos:queuePos-1));
+      if(t)t.scrollIntoView({behavior:'smooth',block:'center'});
+    });
   }
-  h+=`</div>`;
-  return h;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -675,31 +631,27 @@ function renderTournCard(t,showLatest){
 // ═══════════════════════════════════════════════════════════════
 function renderCalendar(){
   const el=document.getElementById('tab-calendar');
-  let h=`<div class="section-title">Season Calendar · ${SEASON_DAYS} days</div>`;
-  h+=`<div class="cal-grid">`;
-  for(let d=1;d<=SEASON_DAYS;d++){
-    const tIds=calendar[d]||[];
-    const hasTop12=tIds.some(id=>isTop12(tournaments[id]));
-    const cls=d===currentDay?'today ':'';
-    const cls2=tIds.length===0?'empty':hasTop12?'top12':'has-t';
-    h+=`<div class="cal-cell ${cls}${cls2}" title="Day ${d}: ${tIds.length} tournaments">${tIds.length||''}</div>`;
-  }
-  h+=`</div>`;
-
-  // Legend
-  h+=`<div style="display:flex;gap:16px;margin-top:12px;font-size:.7rem;color:var(--muted)">
-    <span>⬜ Empty</span><span style="color:var(--muted)">▪ Active</span><span style="color:var(--gold)">▪ Top 12</span><span>🔲 Today</span>
-  </div>`;
-
-  // Top 12 schedule
-  h+=`<div class="section-title">Top 12 Schedule</div>`;
-  const top12=tournaments.filter(t=>isTop12(t)).sort((a,b)=>a.startDay-b.startDay);
-  top12.forEach(t=>{
-    h+=`<div style="font-size:.8rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
-      <span class="tier-badge ${t.css}" style="margin-right:6px">${t.label}</span>
-      <b>${allTeams[t.hostIdx].name}</b> · Day ${t.startDay}–${t.startDay+t.days-1}
+  let h=`<div class="section-title">Top 12 Schedule</div>`;
+  tournaments.filter(t=>isTop12(t)).sort((a,b)=>a.startDay-b.startDay).forEach(t=>{
+    const host=allTeams[t.hostIdx];
+    h+=`<div style="font-size:.78rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
+      ${regBadge(host.comunidad,host.provincia)}<span class="tier-badge ${t.css}" style="margin-right:4px">${t.label}</span>
+      <b>${host.name}</b> · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
       ${t.complete?' · 🏆 '+allTeams[t.winner].name:''}
     </div>`;
+  });
+  h+=`<div class="section-title">Monthly Overview</div>`;
+  let dayOff=0;
+  MONTHS.forEach((m,mi)=>{
+    const daysInMonth=MONTH_DAYS[mi];
+    let count=0;
+    for(let d=1;d<=daysInMonth;d++){const day=dayOff+d;count+=(calendar[day]||[]).length}
+    h+=`<div style="display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:3px;text-align:center;min-width:70px">
+      <div style="font-size:.7rem;color:var(--muted)">${m}</div>
+      <div style="font-family:var(--mono);font-size:.9rem;color:var(--gold);font-weight:700">${count}</div>
+      <div style="font-size:.6rem;color:var(--muted)">tournaments</div>
+    </div>`;
+    dayOff+=daysInMonth;
   });
   el.innerHTML=h;
 }
@@ -709,20 +661,79 @@ function renderCalendar(){
 // ═══════════════════════════════════════════════════════════════
 function renderRankings(){
   const el=document.getElementById('tab-rankings');
-  const ranked=getRankedTeams().slice(0,100);
+  const ranked=getRanked().slice(0,100);
   let h=`<div class="section-title">Top 100 Rankings</div>`;
-  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Value</th><th>Pts</th><th>W</th><th>L</th><th>T</th></tr></thead><tbody>`;
-  ranked.forEach((tIdx,i)=>{
-    const t=allTeams[tIdx],s=teamStats[tIdx]||{};
-    h+=`<tr><td class="pos">${i+1}</td><td style="font-weight:600">${t.name}</td>
-      <td style="font-size:.74rem;color:var(--muted)">${t.comunidad}</td>
+  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Region</th><th>Value</th><th>Pts</th><th>W</th><th>L</th><th>T</th></tr></thead><tbody>`;
+  ranked.forEach((i,r)=>{
+    const t=allTeams[i],s=stats[i]||{};
+    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+      <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
       <td class="val">${fmt(t.value)}</td>
-      <td class="mono" style="color:var(--gold)">${points[tIdx]||0}</td>
+      <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
       <td class="mono" style="color:var(--green)">${s.wins||0}</td>
       <td class="mono" style="color:var(--red-bright)">${s.losses||0}</td>
-      <td class="mono" style="color:var(--muted)">${s.tourneysPlayed||0}</td></tr>`;
+      <td class="mono" style="color:var(--muted)">${s.tp||0}</td></tr>`;
   });
   h+=`</tbody></table>`;
+  el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER: REGIONAL RANKINGS
+// ═══════════════════════════════════════════════════════════════
+function renderRegional(){
+  const el=document.getElementById('tab-regional');
+  let h='';
+
+  // By comunidad
+  const coms={};
+  allTeams.forEach((t,i)=>{if(!coms[t.comunidad])coms[t.comunidad]=[];coms[t.comunidad].push(i)});
+  // Sort comunidades by total points
+  const comList=Object.entries(coms).sort((a,b)=>{
+    const pa=a[1].reduce((s,i)=>s+(pts[i]||0),0);
+    const pb=b[1].reduce((s,i)=>s+(pts[i]||0),0);
+    return pb-pa;
+  });
+
+  h+=`<div class="section-title">Regional Rankings</div>`;
+  comList.forEach(([com,idxs])=>{
+    const totalP=idxs.reduce((s,i)=>s+(pts[i]||0),0);
+    const sorted=idxs.sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
+    h+=`<details style="margin-bottom:8px"><summary style="cursor:pointer;padding:6px 0;font-weight:600;font-size:.85rem">${comFlag(com)}${com} <span class="mono" style="font-size:.7rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.7rem;color:var(--muted)">(${idxs.length} teams)</span></summary>`;
+    h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Provincia</th><th>Pts</th><th>W/L</th></tr></thead><tbody>`;
+    sorted.slice(0,20).forEach((i,r)=>{
+      const t=allTeams[i],s=stats[i]||{};
+      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${t.name}</td>
+        <td style="font-size:.72rem;color:var(--muted)">${t.provincia}</td>
+        <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
+        <td class="mono" style="font-size:.7rem"><span style="color:var(--green)">${s.wins||0}</span>/<span style="color:var(--red-bright)">${s.losses||0}</span></td></tr>`;
+    });
+    h+=`</tbody></table></details>`;
+  });
+
+  // By provincia (only show provincias with 2+ teams)
+  h+=`<div class="section-title">Provincial Rankings</div>`;
+  const provs={};
+  allTeams.forEach((t,i)=>{if(!provs[t.provincia])provs[t.provincia]={com:t.comunidad,teams:[]};provs[t.provincia].teams.push(i)});
+  const provList=Object.entries(provs).filter(([,v])=>v.teams.length>=2).sort((a,b)=>{
+    const pa=a[1].teams.reduce((s,i)=>s+(pts[i]||0),0);
+    const pb=b[1].teams.reduce((s,i)=>s+(pts[i]||0),0);
+    return pb-pa;
+  });
+  provList.forEach(([prov,{com,teams:idxs}])=>{
+    const totalP=idxs.reduce((s,i)=>s+(pts[i]||0),0);
+    const sorted=idxs.sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
+    h+=`<details style="margin-bottom:6px"><summary style="cursor:pointer;padding:4px 0;font-size:.82rem">${regBadge(com,prov)}${prov} <span class="mono" style="font-size:.68rem;color:var(--gold)">${fmt(totalP)} pts</span> <span style="font-size:.68rem;color:var(--muted)">(${idxs.length})</span></summary>`;
+    h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Pts</th><th>W/L</th></tr></thead><tbody>`;
+    sorted.slice(0,15).forEach((i,r)=>{
+      const t=allTeams[i],s=stats[i]||{};
+      h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${t.name}</td>
+        <td class="mono" style="color:var(--gold)">${pts[i]||0}</td>
+        <td class="mono" style="font-size:.7rem"><span style="color:var(--green)">${s.wins||0}</span>/<span style="color:var(--red-bright)">${s.losses||0}</span></td></tr>`;
+    });
+    h+=`</tbody></table></details>`;
+  });
+
   el.innerHTML=h;
 }
 
@@ -734,20 +745,18 @@ function renderTournaments(){
   let h='';
   const tiers=['Grand Slam','Level 2','Level 3','Level 4','Level 5','Level 6','Level 7','Level 8'];
   tiers.forEach(tier=>{
-    const tt=tournaments.filter(t=>t.label===tier);
-    if(!tt.length)return;
+    const tt=tournaments.filter(t=>t.label===tier);if(!tt.length)return;
     const done=tt.filter(t=>t.complete).length;
-    h+=`<div class="section-title">${tier} (${done}/${tt.length} complete)</div>`;
-    tt.sort((a,b)=>a.startDay-b.startDay).slice(0,20).forEach(t=>{
+    h+=`<div class="section-title">${tier} (${done}/${tt.length})</div>`;
+    tt.sort((a,b)=>a.startDay-b.startDay).slice(0,30).forEach(t=>{
       const host=allTeams[t.hostIdx];
-      h+=`<div style="font-size:.8rem;padding:5px 0;border-bottom:1px solid rgba(58,50,40,.25)">
-        <span class="tier-badge ${t.css}" style="margin-right:4px">${tier.substring(0,3)}</span>
-        <b>${host.name}</b> <span style="color:var(--muted)">${host.comunidad}</span>
-        · Day ${t.startDay}–${t.startDay+t.days-1}
+      h+=`<div style="font-size:.78rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
+        ${regBadge(host.comunidad,host.provincia)}<b>${host.name}</b> <span style="color:var(--muted)">${host.provincia}</span>
+        · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
         ${t.complete?' · 🏆 '+allTeams[t.winner].name+' | 🥈 '+allTeams[t.runnerUp].name:''}
       </div>`;
     });
-    if(tt.length>20)h+=`<div style="font-size:.75rem;color:var(--muted);padding:4px 0">+ ${tt.length-20} more...</div>`;
+    if(tt.length>30)h+=`<div style="font-size:.72rem;color:var(--muted);padding:3px 0">+${tt.length-30} more</div>`;
   });
   el.innerHTML=h;
 }
@@ -755,34 +764,30 @@ function renderTournaments(){
 // ═══════════════════════════════════════════════════════════════
 // RENDER: TEAMS
 // ═══════════════════════════════════════════════════════════════
-function renderTeams(){
+function renderTeamsTab(){
   const el=document.getElementById('tab-teams');
   const sorted=[...allTeams.keys()].sort((a,b)=>allTeams[b].value-allTeams[a].value);
-  let h=`<div class="section-title">All Teams (${allTeams.length}) — sorted by value</div>`;
-  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Provincia</th><th>Value</th><th>Δ</th><th>Tournament</th></tr></thead><tbody>`;
-  sorted.slice(0,100).forEach((tIdx,i)=>{
-    const t=allTeams[tIdx],delta=t.value-t.startValue;
-    const tier=getTier(tIdx+1);
-    h+=`<tr><td class="pos">${i+1}</td><td style="font-weight:600">${t.name}</td>
-      <td style="font-size:.74rem;color:var(--muted)">${t.comunidad}</td>
-      <td style="font-size:.74rem;color:var(--muted)">${t.provincia}</td>
+  let h=`<div class="section-title">All Teams (${allTeams.length})</div>`;
+  h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Provincia</th><th>Value</th><th>Δ</th><th>Hosts</th></tr></thead><tbody>`;
+  sorted.slice(0,100).forEach((i,r)=>{
+    const t=allTeams[i],d=t.value-t.startValue;
+    const tier=getTier(i+1);
+    h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600">${regBadge(t.comunidad,t.provincia)}${t.name}</td>
+      <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
+      <td style="font-size:.72rem;color:var(--muted)">${t.provincia}</td>
       <td class="val">${fmt(t.value)}</td>
-      <td class="mono ${delta>=0?'delta-pos':'delta-neg'}" style="font-size:.72rem">${delta>=0?'+':''}${fmt(delta)}</td>
+      <td class="mono ${d>=0?'delta-pos':'delta-neg'}" style="font-size:.7rem">${d>=0?'+':''}${fmt(d)}</td>
       <td><span class="tier-badge ${tier.css}">${tier.label}</span></td></tr>`;
   });
   h+=`</tbody></table>`;
-  if(allTeams.length>100)h+=`<div style="font-size:.75rem;color:var(--muted);margin-top:8px">Showing top 100 of ${allTeams.length}</div>`;
+  if(allTeams.length>100)h+=`<div style="font-size:.72rem;color:var(--muted);margin-top:6px">Top 100 of ${allTeams.length}</div>`;
   el.innerHTML=h;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════
-if(loadState()){
-  renderAll();
-}else{
-  initSeason();
-}
+if(loadState()){renderAll()}else{initSeason()}
 </script>
 </body>
 </html>
