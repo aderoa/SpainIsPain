@@ -602,8 +602,8 @@ async function checkExpansion(){
 
     // Take up to EXPANSION_SIZE
     const batch=newRows.slice(0,EXPANSION_SIZE);
-    const minTP=Math.min(...Object.values(stats).map(s=>s.tp||0).filter(x=>x>0),999);
-    const effectiveMinTP=minTP===999?0:minTP;
+    const allTP=allTeams.map((_,i)=>stats[i]?.tp||0);
+    const effectiveMinTP=Math.min(...allTP);
 
     batch.forEach(row=>{
       const idx=allTeams.length;
