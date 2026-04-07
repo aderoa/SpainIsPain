@@ -138,12 +138,29 @@ table.tbl tr:hover td{background:rgba(212,168,67,.03)}
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vTxJa_oKMLmu1yBLvWDnnuXnb3UduuQIdOrewmqW74XZM3r1VJZR3gO9uHd2GeRaS6vwCxkch0rPdFz/pub?gid=738693130&single=true&output=csv';
-const SAVE_KEY='sip_tourn_v3';
+const SAVE_KEY='sip_tourn_v4';
 const COOL=7;
 const DAYS=365;
+const SEASON_END=349; // Dec 15 — regular tournaments end here
+const CHAMP_SPAIN_DAY=351;  // Dec 17
+const CHAMP_COM_DAY=358;    // Dec 24
+const CHAMP_PROV_DAY=363;   // Dec 29
 
-const TIERS=[[4,32,5,'Grand Slam','tier-gs'],[12,32,5,'Level 2','tier-2'],[28,16,4,'Level 3','tier-3'],[60,16,4,'Level 4','tier-4'],[124,16,4,'Level 5','tier-lo'],[252,16,4,'Level 6','tier-lo'],[508,16,4,'Level 7','tier-lo'],[9999,16,4,'Level 8','tier-lo']];
+// Tier: [maxHostRank, teamCount, days, label, css, maxRankToPlay, minRankToPlay]
+// maxRankToPlay: only teams ranked <= this can play (0=no limit)
+// minRankToPlay: teams ranked < this cannot play (0=no limit, means top teams excluded from low tiers)
+const TIERS=[
+  [4,32,5,'Grand Slam','tier-gs',64,0],
+  [12,32,5,'Level 2','tier-2',128,0],
+  [28,16,4,'Level 3','tier-3',256,0],
+  [60,16,4,'Level 4','tier-4',0,0],
+  [124,16,4,'Level 5','tier-lo',0,13],
+  [252,16,4,'Level 6','tier-lo',0,29],
+  [508,16,4,'Level 7','tier-lo',0,61],
+  [9999,16,4,'Level 8','tier-lo',0,125],
+];
 const PTS={'Grand Slam':[2000,1000,600,400,200,100],'Level 2':[1000,500,300,200,100,50],'Level 3':[400,200,120,80,40,0],'Level 4':[200,100,60,40,20,0],'Level 5':[100,50,30,20,10,0],'Level 6':[50,25,15,10,5,0],'Level 7':[25,12,8,5,2,0],'Level 8':[10,5,3,2,1,0]};
+const CHAMP_PTS={spain:[500,250,150,100,50,25],com:[100,50,30,20,10,0],prov:[50,25,15,10,5,0]};
 
 // Flags — Wikimedia Commons via Special:FilePath
 const FP='https://commons.wikimedia.org/wiki/Special:FilePath/';
@@ -247,9 +264,19 @@ const EXPANSION_SIZE=10;
 // ═══════════════════════════════════════════════════════════════
 function fmt(n){return n.toLocaleString('es-ES')}
 function randInt(a,b){return a+Math.floor(Math.random()*(b-a+1))}
-function getTier(r){for(const[mx,tc,d,l,c]of TIERS)if(r<=mx)return{teamCount:tc,days:d,label:l,css:c};return{teamCount:16,days:4,label:'Level 8',css:'tier-lo'}}
+function getTier(r){for(const[mx,tc,d,l,c,maxR,minR]of TIERS)if(r<=mx)return{teamCount:tc,days:d,label:l,css:c,maxRank:maxR||0,minRank:minR||0};return{teamCount:16,days:4,label:'Level 8',css:'tier-lo',maxRank:0,minRank:125}}
 function isTop12(t){return t.label==='Grand Slam'||t.label==='Level 2'}
 function totalRounds(t){return t.teamCount===32?5:4}
+
+// Can this team play in this tournament based on rank restrictions?
+function canPlayInTier(tIdx,tourn){
+  const ranked=getRanked();
+  const rank=ranked.indexOf(tIdx)+1;
+  const tier=getTier(tourn.hostIdx+1);
+  if(tier.maxRank>0&&rank>tier.maxRank)return false; // too low ranked for top tournaments
+  if(tier.minRank>0&&rank<tier.minRank)return false;  // too high ranked for bottom tournaments
+  return true;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // CSV
@@ -279,7 +306,7 @@ function buildCalendar(){
   const top12Windows=[];
   top12.forEach(t=>{
     const valid=[];
-    for(let d=TOP12_MIN_DAY;d<=DAYS-t.days+1;d++){
+    for(let d=TOP12_MIN_DAY;d<=SEASON_END-t.days+1;d++){
       let ok=true;
       for(const w of top12Windows){
         if(d<=w.end&&d+t.days-1>=w.start){ok=false;break}
@@ -306,7 +333,7 @@ function buildCalendar(){
     const dur=t.days;
 
     let bestDay=1,bestScore=Infinity;
-    for(let d=1;d<=DAYS-dur+1;d++){
+    for(let d=1;d<=SEASON_END-dur+1;d++){
       // Large random base ensures truly random placement
       let score=Math.random()*200;
       // Load penalty — keeps days from getting too packed
@@ -358,13 +385,13 @@ function selectTeams(t){
   const host=allTeams[t.hostIdx];
   const ranked=getRanked();
   const n=t.teamCount;
-  // Available = not in any active tournament AND not host-frozen
-  const avail=i=>{initStats(i);return !isTeamBusy(i)&&!isHostFrozen(i,t.startDay)};
-  // For top-12: also must have been free for COOL days before
-  const availTop12=i=>{initStats(i);if(isTeamBusy(i)||isHostFrozen(i,t.startDay))return false;const bu=teamBusyUntil(i);return bu===0||bu<=t.startDay-COOL};
+  // Available = not busy, not host-frozen, and meets rank restrictions
+  const avail=i=>{initStats(i);return !isTeamBusy(i)&&!isHostFrozen(i,t.startDay)&&canPlayInTier(i,t)};
+  const availTop12=i=>{initStats(i);if(isTeamBusy(i)||isHostFrozen(i,t.startDay))return false;if(!canPlayInTier(i,t))return false;const bu=teamBusyUntil(i);return bu===0||bu<=t.startDay-COOL};
   const fn=isTop12(t)?availTop12:avail;
-  // Host must not be in another active tournament
-  const sel=new Set(avail(t.hostIdx)?[t.hostIdx]:[]);
+  // Host always plays (skip rank restriction for host)
+  const hostAvail=!isTeamBusy(t.hostIdx)&&!isHostFrozen(t.hostIdx,t.startDay);
+  const sel=new Set(hostAvail?[t.hostIdx]:[]);
 
   if(t.label==='Grand Slam'){
     for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
@@ -545,9 +572,12 @@ function buildDayQueue(){
 function playNextInQueue(){
   if(queuePos>=dayQueue.length)return;
   const q=dayQueue[queuePos];
-  const res=simMatch(q.t1,q.t2,q.tid);
+  const tournId=q.isChamp?null:q.tid;
+  const res=simMatch(q.t1,q.t2,tournId);
   q.result=res;
-  const t=tournaments[q.tid];
+
+  // Get the target object (tournament or championship)
+  const t=q.isChamp?championships[q.champIdx]:tournaments[q.tid];
   if(q.rIdx==='bronze'){
     t.results.bronze=[res];
     t.third=res.winI;t.fourth=res.losI;
@@ -558,17 +588,28 @@ function playNextInQueue(){
     q.winMsg=`${res.wn} advances`;
   }
   queuePos++;
-  const tr=totalRounds(t);
+  const tr=q.isChamp?champTotalRounds(t):totalRounds(t);
   if(q.rIdx===tr-1){
     const roundMatches=dayQueue.filter(x=>x.tid===q.tid&&x.rIdx===q.rIdx);
     if(roundMatches.every(x=>x.result)){
       t.winner=roundMatches[0].result.winI;t.runnerUp=roundMatches[0].result.losI;t.complete=true;
-      awardPoints(t);
-      // teams freed automatically when t.complete=true;
-      q.winMsg=`🏆 ${allTeams[t.winner].name} wins the ${t.label}!`;
+      if(!q.isChamp){
+        awardPoints(t);
+        // teams freed automatically when t.complete=true
+      }else{
+        // Award championship points
+        const cpKey=t.type;
+        const cp=CHAMP_PTS[cpKey]||[50,25,15,10,5,0];
+        if(t.winner!=null)pts[t.winner]=(pts[t.winner]||0)+cp[0];
+        if(t.runnerUp!=null)pts[t.runnerUp]=(pts[t.runnerUp]||0)+cp[1];
+        if(t.third!=null)pts[t.third]=(pts[t.third]||0)+cp[2];
+        if(t.fourth!=null)pts[t.fourth]=(pts[t.fourth]||0)+cp[3];
+      }
+      const champLabel=q.isChamp?t.name:t.label;
+      q.winMsg=`🏆 ${allTeams[t.winner].name} wins the ${champLabel}!`;
       // Record in palmares
       palmares.push({
-        year:seasonYear,tournId:q.tid,label:t.label,css:t.css,
+        year:seasonYear,tournId:q.isChamp?'champ_'+q.champIdx:q.tid,label:q.isChamp?t.name:t.label,css:t.css,
         hostName:allTeams[t.hostIdx].name,hostCom:allTeams[t.hostIdx].comunidad,
         winnerName:allTeams[t.winner].name,winnerCom:allTeams[t.winner].comunidad,
         runnerUpName:allTeams[t.runnerUp].name,
@@ -602,34 +643,33 @@ async function checkExpansion(){
 
     // Take up to EXPANSION_SIZE
     const batch=newRows.slice(0,EXPANSION_SIZE);
-    const allTP=allTeams.map((_,i)=>stats[i]?.tp||0);
-    const effectiveMinTP=Math.min(...allTP);
+    // Min TP from ALL existing teams (including those with 0)
+    let minTP=Infinity;
+    for(let i=0;i<allTeams.length;i++){minTP=Math.min(minTP,stats[i]?.tp||0)}
+    if(minTP===Infinity)minTP=0;
 
     batch.forEach(row=>{
       const idx=allTeams.length;
       allTeams.push({...row,startValue:row.value});
-
-      // Init stats with minimum tournaments played
       initStats(idx);
-      stats[idx].tp=effectiveMinTP;
+      stats[idx].tp=minTP;
 
-      // Create tournament for this team
+      // Create tournament
       const tier=getTier(idx+1);
       const tourn={id:tournaments.length,hostIdx:idx,label:tier.label,css:tier.css,
         teamCount:tier.teamCount,days:tier.days,startDay:0,
-        teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false};
+        teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false,nextYear:false};
       tournaments.push(tourn);
 
-      // Schedule: find best day in remaining season
+      // Schedule on any day 1-SEASON_END (random, load-balanced)
       const dur=tourn.days;
       const prov=row.provincia;
-      let bestDay=currentDay+1,bestScore=Infinity;
-      for(let d=currentDay+1;d<=DAYS-dur+1;d++){
+      let bestDay=1,bestScore=Infinity;
+      for(let d=1;d<=SEASON_END-dur+1;d++){
         let score=Math.random()*200;
         for(let dd=0;dd<dur;dd++){
           score+=(calendar[d+dd]?.length||0)*15;
         }
-        // Same-province penalty
         for(let dd=0;dd<dur;dd++){
           const dayTourns=calendar[d+dd]||[];
           if(dayTourns.some(tid=>allTeams[tournaments[tid]?.hostIdx]?.provincia===prov))score+=800;
@@ -637,14 +677,22 @@ async function checkExpansion(){
         if(score<bestScore){bestScore=score;bestDay=d}
       }
       tourn.startDay=bestDay;
-      for(let d=0;d<dur;d++){
-        if(!calendar[bestDay+d])calendar[bestDay+d]=[];
-        calendar[bestDay+d].push(tourn.id);
+      // If scheduled before current day, mark for next year
+      if(bestDay<=currentDay){
+        tourn.nextYear=true;
+        // Don't add to calendar this year — it'll be scheduled next season
+      }else{
+        for(let d=0;d<dur;d++){
+          if(!calendar[bestDay+d])calendar[bestDay+d]=[];
+          calendar[bestDay+d].push(tourn.id);
+        }
       }
     });
 
+    const thisYear=batch.filter((_,i)=>!tournaments[tournaments.length-batch.length+i].nextYear).length;
+    const nextYr=batch.length-thisYear;
     const remaining=newRows.length-batch.length;
-    expansionMsg=`📦 ${batch.length} new teams added: ${batch.map(r=>r.name).join(', ')}. Min TP set to ${effectiveMinTP}.${remaining>0?' ('+remaining+' more available next expansion)':''}`;
+    expansionMsg=`📦 ${batch.length} new: ${batch.map(r=>r.name).join(', ')}. TP=${minTP}. ${thisYear} this year, ${nextYr} next year.${remaining>0?' ('+remaining+' more next expansion)':''}`;
     pendingExpansion=false;
     buildDayQueue(); // Build queue for this expansion day
     saveState();renderAll();
@@ -659,21 +707,139 @@ function skipExpansion(){
   buildDayQueue();saveState();renderAll();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// CHAMPIONSHIPS — end of season special events
+// ═══════════════════════════════════════════════════════════════
+let championships=[]; // [{type:'spain'|'com'|'prov',name,teams,bracket,results,winner,...}]
+
+function createChampionships(){
+  championships=[];
+  const ranked=getRanked();
+
+  // Spain Championship: top 64, 6 rounds (Dec 17-22), rotating host
+  const spainTeams=ranked.slice(0,64);
+  const hostIdx=spainTeams[seasonYear%spainTeams.length]; // rotating host
+  championships.push({
+    type:'spain',name:'Spain Championship 🇪🇸',hostIdx,
+    teams:spainTeams,teamCount:64,days:6,startDay:CHAMP_SPAIN_DAY,
+    bracket:buildTennisBracket(spainTeams),results:{},
+    winner:null,runnerUp:null,third:null,fourth:null,complete:false,
+    seedMap:Object.fromEntries(spainTeams.map((t,i)=>i<32?[t,i+1]:[t,0])),
+    css:'tier-gs',label:'🇪🇸 Spain Championship',
+  });
+
+  // Comunidad Championships: top 16 per comunidad (Dec 24-27)
+  const coms={};
+  allTeams.forEach((t,i)=>{if(!coms[t.comunidad])coms[t.comunidad]=[];coms[t.comunidad].push(i)});
+  for(const[com,idxs]of Object.entries(coms)){
+    // Sort by ranking
+    const sorted=idxs.sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
+    const teams=sorted.slice(0,16);
+    // Pad to nearest power of 2 for bracket
+    let bracketSize=2;
+    while(bracketSize<teams.length)bracketSize*=2;
+    const hostI=teams[0];
+    championships.push({
+      type:'com',name:com+' Championship',hostIdx:hostI,
+      teams,teamCount:bracketSize,days:4,startDay:CHAMP_COM_DAY,
+      bracket:buildTennisBracket(teams),results:{},
+      winner:null,runnerUp:null,third:null,fourth:null,complete:false,
+      seedMap:Object.fromEntries(teams.map((t,i)=>i<Math.floor(teams.length/2)?[t,i+1]:[t,0])),
+      css:'tier-2',label:comFlag(com)+com,actualTeams:teams.length,
+    });
+  }
+
+  // Provincia Championships: top 8 per provincia with 2+ teams (Dec 29-31)
+  const provs={};
+  allTeams.forEach((t,i)=>{if(!provs[t.provincia])provs[t.provincia]={com:t.comunidad,teams:[]};provs[t.provincia].teams.push(i)});
+  for(const[prov,{com,teams:idxs}]of Object.entries(provs)){
+    if(idxs.length<2)continue;
+    const sorted=idxs.sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value);
+    const teams=sorted.slice(0,8);
+    let bracketSize=2;
+    while(bracketSize<teams.length)bracketSize*=2;
+    const hostI=teams[0];
+    championships.push({
+      type:'prov',name:prov+' Championship',hostIdx:hostI,
+      teams,teamCount:bracketSize,days:3,startDay:CHAMP_PROV_DAY,
+      bracket:buildTennisBracket(teams),results:{},
+      winner:null,runnerUp:null,third:null,fourth:null,complete:false,
+      seedMap:Object.fromEntries(teams.map((t,i)=>i<Math.floor(teams.length/2)?[t,i+1]:[t,0])),
+      css:'tier-3',label:comFlag(com)+prov,actualTeams:teams.length,
+    });
+  }
+}
+
+function getChampAlive(c){
+  let alive=[...c.bracket].filter(x=>x!=null);
+  for(let r=0;r<20;r++){
+    if(!c.results[r])break;
+    alive=c.results[r].map(m=>m.winI);
+  }
+  return alive;
+}
+
+function champTotalRounds(c){
+  let n=c.teamCount,r=0;while(n>1){n/=2;r++}return r;
+}
+
+function buildChampDayQueue(){
+  dayQueue=[];queuePos=0;
+  // Find active championships for today
+  const activeChamps=championships.filter(c=>!c.complete&&currentDay>=c.startDay&&currentDay<c.startDay+c.days);
+  // Sort: spain first, then com, then prov
+  const typeOrder={spain:0,com:1,prov:2};
+  activeChamps.sort((a,b)=>(typeOrder[a.type]||9)-(typeOrder[b.type]||9));
+
+  activeChamps.forEach(c=>{
+    const rIdx=Object.keys(c.results).filter(k=>k!=='bronze').length;
+    const tr=champTotalRounds(c);
+    if(rIdx>=tr)return;
+    const alive=getChampAlive(c);
+    const roundName=rIdx===tr-1?'Final':rIdx===tr-2?'Semi':rIdx===tr-3?'QF':'R'+(rIdx+1);
+
+    // Bronze before final
+    if(rIdx===tr-1&&c.results[tr-2]){
+      const sfLosers=c.results[tr-2].map(m=>m.losI);
+      if(sfLosers.length===2&&!c.results.bronze){
+        dayQueue.push({tid:'champ_'+championships.indexOf(c),isChamp:true,champIdx:championships.indexOf(c),rIdx:'bronze',roundName:'Bronze',t1:sfLosers[0],t2:sfLosers[1],result:null});
+      }
+    }
+
+    for(let i=0;i<alive.length;i+=2){
+      if(i+1<alive.length){
+        dayQueue.push({tid:'champ_'+championships.indexOf(c),isChamp:true,champIdx:championships.indexOf(c),rIdx,roundName,t1:alive[i],t2:alive[i+1],result:null});
+      }
+    }
+  });
+  daySimmed=dayQueue.length===0;
+}
+
 function advanceDay(){
   if(seasonDone||pendingExpansion)return;
 
   currentDay++;
   if(currentDay>DAYS){seasonDone=true;saveState();renderAll();return}
 
-  // Check if this is an expansion day
-  if(EXPANSION_DAYS.includes(currentDay)){
+  // Create championships when we reach Dec 17
+  if(currentDay===CHAMP_SPAIN_DAY&&championships.length===0){
+    createChampionships();
+  }
+
+  // Check if this is an expansion day (only before championships)
+  if(currentDay<CHAMP_SPAIN_DAY&&EXPANSION_DAYS.includes(currentDay)){
     pendingExpansion=true;
     expansionMsg=`📦 Expansion day! (${dayToDate(currentDay)}) — Check for ${EXPANSION_SIZE} new teams.`;
     saveState();renderAll();
     return;
   }
 
-  buildDayQueue();
+  // Championship days
+  if(currentDay>=CHAMP_SPAIN_DAY){
+    buildChampDayQueue();
+  }else{
+    buildDayQueue();
+  }
   saveState();renderAll();
 }
 
@@ -727,7 +893,7 @@ async function initSeason(){
 
   tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
-  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};pendingExpansion=false;expansionMsg='';
+  currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};pendingExpansion=false;expansionMsg='';championships=[];
   // Preserve palmares across seasons, increment year
   palmares=oldPalmares;
   seasonYear=(seasonYear||0)+1;
@@ -776,8 +942,8 @@ async function syncNames(){
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,h2h,palmares,seasonYear,pendingExpansion,expansionMsg}))}catch(e){}}
-function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;h2h=s.h2h||{};palmares=s.palmares||[];seasonYear=s.seasonYear||1;pendingExpansion=s.pendingExpansion||false;expansionMsg=s.expansionMsg||"";return allTeams.length>0}catch(e){return false}}
+function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({allTeams,tournaments,calendar,currentDay,pts,stats,seasonDone,dayQueue,queuePos,daySimmed,h2h,palmares,seasonYear,pendingExpansion,championships,expansionMsg}))}catch(e){}}
+function loadState(){try{const r=localStorage.getItem(SAVE_KEY);if(!r)return false;const s=JSON.parse(r);allTeams=s.allTeams||[];tournaments=s.tournaments||[];calendar=s.calendar||[];currentDay=s.currentDay||0;pts=s.pts||{};stats=s.stats||{};seasonDone=s.seasonDone||false;dayQueue=s.dayQueue||[];queuePos=s.queuePos||0;daySimmed=s.daySimmed||false;h2h=s.h2h||{};palmares=s.palmares||[];seasonYear=s.seasonYear||1;pendingExpansion=s.pendingExpansion||false;expansionMsg=s.expansionMsg||"";championships=s.championships||[];return allTeams.length>0}catch(e){return false}}
 
 // ═══════════════════════════════════════════════════════════════
 // TABS + RENDER
@@ -830,19 +996,22 @@ function renderSeason(){
     dayQueue.forEach((q,i)=>{if(!byTourn.has(q.tid))byTourn.set(q.tid,[]);byTourn.get(q.tid).push({...q,qIdx:i})});
 
     for(const[tid,matches]of byTourn){
-      const t=tournaments[tid];
+      const isChamp=matches[0]?.isChamp;
+      const t=isChamp?championships[matches[0].champIdx]:tournaments[tid];
+      if(!t)continue;
       const host=allTeams[t.hostIdx];
-      const thCls=t.label==='Grand Slam'?'th-gs':t.label==='Level 2'?'th-l2':'th-lo';
+      const thCls=isChamp?'th-gs':t.label==='Grand Slam'?'th-gs':t.label==='Level 2'?'th-l2':'th-lo';
+      const dispLabel=isChamp?t.name:(t.label+' '+host.name);
       h+=`<div class="tourn-header-bar ${thCls}">
-        <span class="th-name">${regBadge(host.comunidad)}<span class="tier-badge ${t.css}">${t.label}</span> ${host.name}</span>
-        <span class="th-meta">${t.teamCount} teams · ${matches[0].roundName}${t.complete?' · 🏆 '+allTeams[t.winner].name:''}</span>
+        <span class="th-name">${regBadge(host.comunidad)}<span class="tier-badge ${t.css}">${isChamp?'CHAMP':t.label}</span> ${isChamp?t.name:host.name}</span>
+        <span class="th-meta">${t.actualTeams||t.teamCount} teams · ${matches[0].roundName}${t.complete?' · 🏆 '+allTeams[t.winner].name:''}</span>
       </div>`;
 
       matches.forEach(q=>{
         const isCur=!daySimmed&&q.qIdx===queuePos;
         const t1=allTeams[q.t1],t2=allTeams[q.t2];
-        const tourn=tournaments[q.tid];
-        const s1=tourn.seedMap?.[q.t1];const s2=tourn.seedMap?.[q.t2];
+        const tObj=isChamp?championships[q.champIdx]:tournaments[q.tid];
+        const s1=tObj?.seedMap?.[q.t1];const s2=tObj?.seedMap?.[q.t2];
         const seed1=s1?`<span class="mono" style="font-size:.6rem;color:var(--gold);margin-right:3px">[${s1}]</span>`:'';
         const seed2=s2?`<span class="mono" style="font-size:.6rem;color:var(--gold);margin-left:3px">[${s2}]</span>`:'';
         const rec=getH2H(q.t1,q.t2);
