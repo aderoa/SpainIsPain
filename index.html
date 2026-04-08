@@ -373,6 +373,7 @@ function buildCalendar(){
 // TEAM SELECTION
 // ═══════════════════════════════════════════════════════════════
 function getRanked(){return allTeams.map((_,i)=>i).sort((a,b)=>(pts[b]||0)-(pts[a]||0)||allTeams[b].value-allTeams[a].value)}
+function getRankOf(tIdx){const r=getRanked();return r.indexOf(tIdx)+1}
 function initStats(i){if(!stats[i])stats[i]={played:0,wins:0,losses:0,tp:0}}
 
 // Check if team is in any active (incomplete) tournament
@@ -397,11 +398,13 @@ function selectTeams(t){
   const host=allTeams[t.hostIdx];
   const ranked=getRanked();
   const n=t.teamCount;
+  // For non-top-12: hosts of other tournaments are frozen
   const avail=i=>{initStats(i);return !isTeamBusy(i)&&!isHostFrozen(i,t.startDay)&&canPlayInTier(i,t)};
-  const availTop12=i=>{initStats(i);if(isTeamBusy(i)||isHostFrozen(i,t.startDay))return false;if(!canPlayInTier(i,t))return false;const bu=teamBusyUntil(i);return bu===0||bu<=t.startDay-COOL};
+  // For top-12: hosts CAN skip their own tournament to play here (no host freeze check)
+  const availTop12=i=>{initStats(i);if(isTeamBusy(i))return false;if(!canPlayInTier(i,t))return false;const bu=teamBusyUntil(i);return bu===0||bu<=t.startDay-COOL};
   const fn=isTop12(t)?availTop12:avail;
-  // Host ALWAYS plays — only check busy/frozen, skip rank restrictions
-  const hostBusy=isTeamBusy(t.hostIdx)||isHostFrozen(t.hostIdx,t.startDay);
+  // Host ALWAYS plays their own — only blocked if currently in another active tournament
+  const hostBusy=isTeamBusy(t.hostIdx);
   const sel=new Set(hostBusy?[]:[t.hostIdx]);
 
   if(t.label==='Grand Slam'){
@@ -455,10 +458,16 @@ function selectTeams(t){
 }
 
 // Host calendar freeze: hosts can't be picked for other tournaments 7 days before their own
-function isHostFrozen(tIdx,day){
-  const hosted=tournaments.find(t=>t.hostIdx===tIdx&&!t.complete);
-  if(!hosted)return false;
-  return day>=hosted.startDay-COOL&&day<hosted.startDay;
+function isHostFrozen(tIdx,day,excludeTournId){
+  // A host can't be picked for OTHER tournaments if their own is coming up or running
+  // excludeTournId: skip this tournament (so host isn't blocked from their own)
+  return tournaments.some(t=>{
+    if(t.id===excludeTournId)return false;
+    if(t.hostIdx!==tIdx||t.complete||t.nextYear)return false;
+    const start=t.startDay;
+    const end=t.startDay+t.days-1;
+    return day>=start-COOL&&day<=end;
+  });
 }
 
 function buildTennisBracket(teams){
@@ -556,10 +565,21 @@ function buildDayQueue(){
   // Sort by tier importance (hostIdx = rank, lower = more important) to match display order
   const sortedTids=[...todayIds].sort((a,b)=>tournaments[a].hostIdx-tournaments[b].hostIdx);
 
+  // CRITICAL: Fill teams for tournaments starting today with host's own tournament FIRST
+  // This prevents hosts from being drafted by other tournaments before their own gets filled
+  const starting=sortedTids.filter(tid=>{const t=tournaments[tid];return!t.complete&&(!t.teams||!t.teams.length)});
+  // Sort starting: host tournaments first (where today is the start day)
+  starting.sort((a,b)=>{
+    const aIsStart=tournaments[a].startDay===currentDay?0:1;
+    const bIsStart=tournaments[b].startDay===currentDay?0:1;
+    return aIsStart-bIsStart||tournaments[a].hostIdx-tournaments[b].hostIdx;
+  });
+  starting.forEach(tid=>selectTeams(tournaments[tid]));
+
   sortedTids.forEach(tid=>{
     const t=tournaments[tid];
     if(t.complete)return;
-    if(!t.teams||!t.teams.length)selectTeams(t);
+    if(!t.teams||!t.teams.length)selectTeams(t); // safety fallback
     const rIdx=Object.keys(t.results).filter(k=>k!=='bronze').length;
     const tr=totalRounds(t);
     if(rIdx>=tr)return;
@@ -1020,7 +1040,9 @@ function renderSeason(){
       const thCls=isChamp?'th-gs':t.label==='Grand Slam'?'th-gs':t.label==='Level 2'?'th-l2':'th-lo';
       const dispLabel=isChamp?t.name:(t.label+' '+host.name);
       h+=`<div class="tourn-header-bar ${thCls}">
-        <span class="th-name">${regBadge(host.comunidad)}<span class="tier-badge ${t.css}">${isChamp?'CHAMP':t.label}</span> ${isChamp?t.name:host.name}</span>
+        <span class="th-name" style="cursor:pointer" onclick="showTournHistory('${(isChamp?t.name:host.name).replace(/'/g,"\\'")}','${(isChamp?t.name:t.label).replace(/'/g,"\\'")}')">
+          ${regBadge(host.comunidad)}<span class="tier-badge ${t.css}">${isChamp?'CHAMP':t.label}</span> ${isChamp?t.name:host.name}
+        </span>
         <span class="th-meta">${t.actualTeams||t.teamCount} teams · ${matches[0].roundName}${t.complete?' · 🏆 '+allTeams[t.winner].name:''}</span>
       </div>`;
 
@@ -1041,12 +1063,12 @@ function renderSeason(){
           h+=`<div class="match-card played-m fade-in" id="mq-${q.qIdx}">
             <div class="match-row">
               <div class="match-team"><div>
-                <div class="mname">${seed1}${regBadge(t1.comunidad)}<span class="team-link" onclick="showTeamPalmares(${q.t1})">${r.n1}</span> ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
+                <div class="mname">${seed1}${regBadge(t1.comunidad)}<span class="team-link" onclick="showTeamPalmares(${q.t1})">${r.n1}</span> <span class="mono" style="font-size:.58rem;color:var(--muted)">#${getRankOf(q.t1)}</span> ${w1?'<span class="winner-tag">W</span>':'<span class="loser-tag">L</span>'}</div>
                 <div class="mval">${fmt(t1.value)}</div>
               </div></div>
               <div class="match-vs">${q.roundName}</div>
               <div class="match-team right"><div>
-                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}<span class="team-link" onclick="showTeamPalmares(${q.t2})">${r.n2}</span>${regBadge(t2.comunidad)}${seed2}</div>
+                <div class="mname">${!w1?'<span class="winner-tag">W</span> ':'<span class="loser-tag">L</span> '}<span class="team-link" onclick="showTeamPalmares(${q.t2})">${r.n2}</span> <span class="mono" style="font-size:.58rem;color:var(--muted)">#${getRankOf(q.t2)}</span>${regBadge(t2.comunidad)}${seed2}</div>
                 <div class="mval">${fmt(t2.value)}</div>
               </div></div>
             </div>
@@ -1065,12 +1087,12 @@ function renderSeason(){
             <div style="padding:6px 16px 0">${h2hStr}</div>
             <div class="match-row">
               <div class="match-team"><div>
-                <div class="mname">${seed1}${regBadge(t1.comunidad)}<span class="team-link" onclick="showTeamPalmares(${q.t1})">${t1.name}</span></div>
+                <div class="mname">${seed1}${regBadge(t1.comunidad)}<span class="team-link" onclick="showTeamPalmares(${q.t1})">${t1.name}</span> <span class="mono" style="font-size:.58rem;color:var(--muted)">#${getRankOf(q.t1)}</span></div>
                 <div class="mval">${fmt(t1.value)}</div>
               </div></div>
               <div class="match-vs">${isCur?'<span style="color:var(--gold)">NEXT</span>':q.roundName}</div>
               <div class="match-team right"><div>
-                <div class="mname"><span class="team-link" onclick="showTeamPalmares(${q.t2})">${t2.name}</span>${regBadge(t2.comunidad)}${seed2}</div>
+                <div class="mname"><span class="mono" style="font-size:.58rem;color:var(--muted)">#${getRankOf(q.t2)}</span> <span class="team-link" onclick="showTeamPalmares(${q.t2})">${t2.name}</span>${regBadge(t2.comunidad)}${seed2}</div>
                 <div class="mval">${fmt(t2.value)}</div>
               </div></div>
             </div>
@@ -1101,7 +1123,7 @@ function renderCalendar(){
     const host=allTeams[t.hostIdx];
     h+=`<div style="font-size:.78rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
       ${regBadge(host.comunidad)}<span class="tier-badge ${t.css}" style="margin-right:4px">${t.label}</span>
-      <b>${host.name}</b> · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
+      <b style="cursor:pointer" onclick="showTournHistory('${host.name}','${t.label}')">${host.name}</b> · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
       ${t.complete?' · 🏆 '+allTeams[t.winner].name:''}
     </div>`;
   });
@@ -1247,7 +1269,7 @@ function renderTournaments(){
     tt.sort((a,b)=>a.startDay-b.startDay).slice(0,30).forEach(t=>{
       const host=allTeams[t.hostIdx];
       h+=`<div style="font-size:.78rem;padding:4px 0;border-bottom:1px solid rgba(58,50,40,.25)">
-        ${regBadge(host.comunidad)}<b>${host.name}</b> <span style="color:var(--muted)">${host.provincia}</span>
+        ${regBadge(host.comunidad)}<b style="cursor:pointer" onclick="showTournHistory('${host.name}','${t.label}')">${host.name}</b> <span style="color:var(--muted)">${host.provincia}</span>
         · ${dayToDate(t.startDay)}–${dayToDate(t.startDay+t.days-1)}
         ${t.complete?' · 🏆 '+allTeams[t.winner].name+' | 🥈 '+allTeams[t.runnerUp].name:''}
       </div>`;
@@ -1437,6 +1459,48 @@ function showTeamPalmares(tIdx){
 }
 
 function closeModal(){document.getElementById('team-modal').classList.remove('open')}
+
+function showTournHistory(hostName,label){
+  // Find all palmares entries for this tournament
+  const entries=palmares.filter(p=>p.hostName===hostName||(p.label===label&&p.hostName===hostName));
+  // Also match championship names
+  const champEntries=palmares.filter(p=>p.label===label||p.label.includes(hostName));
+  const all=[...new Set([...entries,...champEntries])].sort((a,b)=>b.year-a.year);
+
+  document.getElementById('modal-title').innerHTML=`${label.includes('Championship')?'':regBadge(allTeams.find(t=>t.name===hostName)?.comunidad||'')}${hostName}`;
+
+  let h='';
+  if(all.length===0){
+    h+=`<p style="color:var(--muted)">No editions completed yet.</p>`;
+  }else{
+    h+=`<table class="tbl"><thead><tr><th>Year</th><th>🥇 Winner</th><th>🥈 Runner-Up</th><th>🥉 Third</th></tr></thead><tbody>`;
+    all.forEach(p=>{
+      const wCom=allTeams.find(t=>t.name===p.winnerName)?.comunidad||'';
+      h+=`<tr>
+        <td class="mono" style="color:var(--muted)">Y${p.year}</td>
+        <td style="font-weight:700;color:var(--gold)">${regBadge(wCom)}${p.winnerName}</td>
+        <td>${p.runnerUpName||'—'}</td>
+        <td>${p.thirdName||'—'}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table>`;
+
+    // Win count for this tournament
+    const winCounts={};
+    all.forEach(p=>{winCounts[p.winnerName]=(winCounts[p.winnerName]||0)+1});
+    const sorted=Object.entries(winCounts).sort((a,b)=>b[1]-a[1]);
+    if(sorted.length>1||sorted[0]?.[1]>1){
+      h+=`<div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:16px 0 8px;font-weight:700">Most Titles</div>`;
+      sorted.slice(0,10).forEach(([name,ct])=>{
+        const com=allTeams.find(t=>t.name===name)?.comunidad||'';
+        h+=`<div style="font-size:.82rem;padding:3px 0">${regBadge(com)}<b>${name}</b> · ${ct} title${ct>1?'s':''}</div>`;
+      });
+    }
+  }
+
+  document.getElementById('modal-body').innerHTML=h;
+  document.getElementById('team-modal').classList.add('open');
+}
 
 // Make team names clickable — helper that wraps name in a link
 function teamLink(tIdx,name){
