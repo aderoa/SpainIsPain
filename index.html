@@ -146,21 +146,22 @@ const CHAMP_SPAIN_DAY=351;  // Dec 17
 const CHAMP_COM_DAY=358;    // Dec 24
 const CHAMP_PROV_DAY=363;   // Dec 29
 
-// Tier: [maxHostRank, teamCount, days, label, css, maxRankToPlay, minRankToPlay]
-// maxRankToPlay: only teams ranked <= this can play (0=no limit)
-// minRankToPlay: teams ranked < this cannot play (0=no limit, means top teams excluded from low tiers)
-const TIERS=[
-  [4,32,5,'Grand Slam','tier-gs',64,0],
-  [12,32,5,'Level 2','tier-2',128,0],
-  [28,16,4,'Level 3','tier-3',256,0],
-  [60,16,4,'Level 4','tier-4',0,0],
-  [124,16,4,'Level 5','tier-lo',0,13],
-  [252,16,4,'Level 6','tier-lo',0,29],
-  [508,16,4,'Level 7','tier-lo',0,61],
-  [9999,16,4,'Level 8','tier-lo',0,125],
-];
-const PTS={'Grand Slam':[2000,1000,600,400,200,100],'Level 2':[1000,500,300,200,100,50],'Level 3':[400,200,120,80,40,0],'Level 4':[200,100,60,40,20,0],'Level 5':[100,50,30,20,10,0],'Level 6':[50,25,15,10,5,0],'Level 7':[25,12,8,5,2,0],'Level 8':[10,5,3,2,1,0]};
+// 4-tier system: GS, L2, L3 (capitals), L4 (rest)
+const PTS={'Grand Slam':[2000,1000,600,400,200,100],'Level 2':[1000,500,300,200,100,50],'Level 3':[400,200,120,80,40,0],'Level 4':[100,50,30,20,10,0]};
 const CHAMP_PTS={spain:[500,250,150,100,50,25],com:[100,50,30,20,10,0],prov:[50,25,15,10,5,0]};
+
+// Provincial & comunidad capitals (team names as in CSV, no suffix)
+const CAPITALS=new Set([
+  'Madrid','Barcelona','València','Zaragoza','Sevilla','Málaga','Murcia','Palma',
+  'Las Palmas','Alicante','Bilbao','Córdoba','Valladolid','A Coruña','Vitoria-Gasteiz',
+  'Granada','Oviedo','Santa Cruz de Tenerife','Pamplona','Almería','Donostia','Burgos',
+  'Santander','Albacete','Castelló de la Plana','Logroño','Badajoz','Salamanca','Huelva',
+  'León','Tarragona','Lleida','Cádiz','Jaén','Girona','Ourense','Lugo','Cáceres','Toledo',
+  'Guadalajara','Pontevedra','Ciudad Real','Palencia','Zamora','Cuenca','Ávila','Segovia',
+  'Huesca','Teruel','Soria','Ceuta','Melilla',
+  // Comunidad capitals not already above
+  'Mérida','Santiago de Compostela',
+]);
 
 // Flags — Wikimedia Commons via Special:FilePath
 const FP='https://commons.wikimedia.org/wiki/Special:FilePath/';
@@ -264,17 +265,28 @@ const EXPANSION_SIZE=10;
 // ═══════════════════════════════════════════════════════════════
 function fmt(n){return n.toLocaleString('es-ES')}
 function randInt(a,b){return a+Math.floor(Math.random()*(b-a+1))}
-function getTier(r){for(const[mx,tc,d,l,c,maxR,minR]of TIERS)if(r<=mx)return{teamCount:tc,days:d,label:l,css:c,maxRank:maxR||0,minRank:minR||0};return{teamCount:16,days:4,label:'Level 8',css:'tier-lo',maxRank:0,minRank:125}}
+function getTier(hostIdx){
+  // hostIdx is 0-indexed, sorted by initial value
+  const rank=hostIdx+1;
+  if(rank<=4)return{teamCount:32,days:5,label:'Grand Slam',css:'tier-gs'};
+  if(rank<=12)return{teamCount:32,days:5,label:'Level 2',css:'tier-2'};
+  // Check if team name is a capital (no II/III suffix)
+  if(allTeams[hostIdx]){
+    const name=allTeams[hostIdx].name;
+    if(CAPITALS.has(name))return{teamCount:16,days:4,label:'Level 3',css:'tier-3'};
+  }
+  return{teamCount:16,days:4,label:'Level 4',css:'tier-lo'};
+}
 function isTop12(t){return t.label==='Grand Slam'||t.label==='Level 2'}
 function totalRounds(t){return t.teamCount===32?5:4}
 
-// Can this team play in this tournament based on rank restrictions?
+// Rank restrictions: GS=top 32 only, L2=top 128, L3=anyone, L4=top 32 excluded (except host)
 function canPlayInTier(tIdx,tourn){
   const ranked=getRanked();
   const rank=ranked.indexOf(tIdx)+1;
-  const tier=getTier(tourn.hostIdx+1);
-  if(tier.maxRank>0&&rank>tier.maxRank)return false; // too low ranked for top tournaments
-  if(tier.minRank>0&&rank<tier.minRank)return false;  // too high ranked for bottom tournaments
+  if(tourn.label==='Grand Slam')return rank<=32;
+  if(tourn.label==='Level 2')return true; // selection handles the mix
+  if(tourn.label==='Level 4'&&tIdx!==tourn.hostIdx)return rank>32; // top 32 excluded unless host
   return true;
 }
 
@@ -385,21 +397,26 @@ function selectTeams(t){
   const host=allTeams[t.hostIdx];
   const ranked=getRanked();
   const n=t.teamCount;
-  // Available = not busy, not host-frozen, and meets rank restrictions
   const avail=i=>{initStats(i);return !isTeamBusy(i)&&!isHostFrozen(i,t.startDay)&&canPlayInTier(i,t)};
   const availTop12=i=>{initStats(i);if(isTeamBusy(i)||isHostFrozen(i,t.startDay))return false;if(!canPlayInTier(i,t))return false;const bu=teamBusyUntil(i);return bu===0||bu<=t.startDay-COOL};
   const fn=isTop12(t)?availTop12:avail;
-  // Host always plays (skip rank restriction for host)
-  const hostAvail=!isTeamBusy(t.hostIdx)&&!isHostFrozen(t.hostIdx,t.startDay);
-  const sel=new Set(hostAvail?[t.hostIdx]:[]);
+  // Host ALWAYS plays — only check busy/frozen, skip rank restrictions
+  const hostBusy=isTeamBusy(t.hostIdx)||isHostFrozen(t.hostIdx,t.startDay);
+  const sel=new Set(hostBusy?[]:[t.hostIdx]);
 
   if(t.label==='Grand Slam'){
+    // Host + top 31 ranked available (host already in, fill to 32)
     for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
   }else if(t.label==='Level 2'){
+    // Top 24 available
     let mc=0;
-    for(const i of ranked){if(sel.size>=n||mc>=24)break;if(!sel.has(i)&&fn(i)){sel.add(i);mc++}}
-    ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!sel.has(i)&&fn(i)).forEach(i=>{if(sel.size<n)sel.add(i)});
-    for(const i of ranked){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
+    for(const i of ranked){if(mc>=24)break;if(!sel.has(i)&&fn(i)){sel.add(i);mc++}}
+    // 4 local teams from host comunidad
+    const local=ranked.filter(i=>allTeams[i].comunidad===host.comunidad&&!sel.has(i)&&fn(i));
+    local.slice(0,4).forEach(i=>sel.add(i));
+    // Fill remaining 4 with best by VALUE not already selected
+    const byValue=[...allTeams.keys()].sort((a,b)=>allTeams[b].value-allTeams[a].value);
+    for(const i of byValue){if(sel.size>=n)break;if(!sel.has(i)&&fn(i))sel.add(i)}
   }else{
     // Half local — RANDOMIZED (not always the biggest), same provincia > comunidad
     const localTarget=Math.floor(n/2);
@@ -655,7 +672,7 @@ async function checkExpansion(){
       stats[idx].tp=minTP;
 
       // Create tournament
-      const tier=getTier(idx+1);
+      const tier=getTier(idx);
       const tourn={id:tournaments.length,hostIdx:idx,label:tier.label,css:tier.css,
         teamCount:tier.teamCount,days:tier.days,startDay:0,
         teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false,nextYear:false};
@@ -891,7 +908,7 @@ async function initSeason(){
     }
   }
 
-  tournaments=allTeams.map((t,i)=>{const tier=getTier(i+1);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
+  tournaments=allTeams.map((t,i)=>{const tier=getTier(i);return{id:i,hostIdx:i,label:tier.label,css:tier.css,teamCount:tier.teamCount,days:tier.days,startDay:0,teams:[],bracket:[],results:{},winner:null,runnerUp:null,third:null,fourth:null,complete:false}});
   buildCalendar();
   currentDay=0;pts={};stats={};seasonDone=false;dayQueue=[];queuePos=0;daySimmed=false;h2h={};pendingExpansion=false;expansionMsg='';championships=[];
   // Preserve palmares across seasons, increment year
@@ -1222,7 +1239,7 @@ function renderRegional(){
 function renderTournaments(){
   const el=document.getElementById('tab-tournaments');
   let h='';
-  const tiers=['Grand Slam','Level 2','Level 3','Level 4','Level 5','Level 6','Level 7','Level 8'];
+  const tiers=['Grand Slam','Level 2','Level 3','Level 4'];
   tiers.forEach(tier=>{
     const tt=tournaments.filter(t=>t.label===tier);if(!tt.length)return;
     const done=tt.filter(t=>t.complete).length;
@@ -1250,7 +1267,7 @@ function renderTeamsTab(){
   h+=`<table class="tbl"><thead><tr><th>#</th><th>Team</th><th>Comunidad</th><th>Provincia</th><th>Value</th><th>Δ</th><th>Hosts</th></tr></thead><tbody>`;
   sorted.slice(0,100).forEach((i,r)=>{
     const t=allTeams[i],d=t.value-t.startValue;
-    const tier=getTier(i+1);
+    const tier=getTier(i);
     h+=`<tr><td class="pos">${r+1}</td><td style="font-weight:600;cursor:pointer" onclick="showTeamPalmares(${i})">${regBadge(t.comunidad)}${t.name}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.comunidad}</td>
       <td style="font-size:.72rem;color:var(--muted)">${t.provincia}</td>
@@ -1272,7 +1289,7 @@ function renderHistory(){
 
   let h='';
   // Group by tier
-  const tiers=['Grand Slam','Level 2','Level 3','Level 4','Level 5','Level 6','Level 7','Level 8'];
+  const tiers=['Grand Slam','Level 2','Level 3','Level 4'];
   tiers.forEach(tier=>{
     const entries=palmares.filter(p=>p.label===tier);
     if(!entries.length)return;
@@ -1321,7 +1338,7 @@ function showTeamPalmares(tIdx){
   const s=stats[tIdx]||{};
   const ranked=getRanked();
   const rank=ranked.indexOf(tIdx)+1;
-  const tier=getTier(tIdx+1);
+  const tier=getTier(tIdx);
 
   document.getElementById('modal-title').innerHTML=`${regBadge(t.comunidad)}${t.name}`;
 
