@@ -80,6 +80,12 @@ circle.t.hi{fill:var(--warn);opacity:1}
   padding:5px 8px;display:flex;align-items:center;gap:8px;min-height:24px}
 .gid{font:600 12px/1 var(--cond);letter-spacing:.1em;color:var(--accent)}
 .gsize{font:400 11px var(--mono);color:var(--muted)}
+.gclr{border:none;background:none;color:var(--muted);cursor:pointer;font:400 13px/1 var(--sans);
+  padding:0 3px;margin-left:2px}
+.gclr:hover{color:var(--warn)}
+.gclr:focus-visible{outline:2px solid var(--accent)}
+.saved{font:400 11px var(--mono);color:var(--muted);min-width:74px}
+.saved b{color:var(--accent);font-weight:500}
 .gsize.full{color:var(--accent)}
 .strip{display:flex;flex-wrap:wrap;gap:2px;margin-left:auto;justify-content:flex-end}
 .strip img{width:15px;height:11px;object-fit:cover;display:block;box-shadow:0 0 0 .5px rgba(0,0,0,.28)}
@@ -3191,6 +3197,10 @@ function assignCluster(st, d){
     }
   }
 }
+function clearGroup(st, d, gi){
+  const g = st.groups[d][gi];
+  g.forEach((id, i) => { if (id !== null){ st.free[d].push(id); g[i] = null; } });
+}
 function emptyGroups(st, d){
   st.groups[d] = st.shape[d].map(() => []);
   st.free[d] = st.member[d].slice();
@@ -3311,6 +3321,87 @@ function expand(){
   return added.length;
 }
 
+/* ═══ save / restore ═════════════════════════ */
+/* window.storage exists when this runs as an artifact; localStorage when the
+   file is hosted anywhere else. Try both, fail quietly. */
+const SAVE_KEY = 'worldleague.v1';
+const Store = {
+  async get(k){
+    try { if (typeof window !== 'undefined' && window.storage){
+      const r = await window.storage.get(k); if (r) return r.value; } } catch (e) {}
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  },
+  async set(k, v){
+    try { if (typeof window !== 'undefined' && window.storage){
+      await window.storage.set(k, v); return true; } } catch (e) {}
+    localStorage.setItem(k, v); return true;
+  },
+  async del(k){
+    try { if (typeof window !== 'undefined' && window.storage) await window.storage.delete(k); } catch (e) {}
+    try { localStorage.removeItem(k); } catch (e) {}
+  },
+};
+const packRank = m => [...m].map(([id, r]) => [id, r.d, r.p]);
+const unpackRank = a => new Map(a.map(([id, d, p]) => [id, {d, p}]));
+
+function encode(withResults){
+  const out = {live: LIVE, ui: {branch: S.branch, scope: S.scope, div: S.div}, st: {}};
+  Object.entries(ST).forEach(([k, st]) => {
+    out.st[k] = {
+      shape: st.shape, year: st.year, member: st.member, groups: st.groups,
+      free: st.free, seed: [...st.seed], val: [...st.val],
+      rank: packRank(st.rank), delta: [...st.delta],
+      result: (withResults && st.result) ? {
+        year: st.result.year, up: st.result.up, down: st.result.down,
+        rank: packRank(st.result.rank),
+        res: st.result.res.map(gs => gs.map(r => ({
+          o: r.order, rel: r.rel,
+          m: r.matches.map(m => [m.a, m.b, m.winner, m.take, m.round]),
+        }))),
+      } : null,
+    };
+  });
+  return JSON.stringify(out);
+}
+function decode(json){
+  const o = JSON.parse(json);
+  LIVE = o.live;
+  Object.keys(ST).forEach(k => delete ST[k]);
+  Object.entries(o.st).forEach(([k, d]) => {
+    const st = {shape: d.shape, year: d.year, member: d.member, groups: d.groups,
+                free: d.free, seed: new Map(d.seed), val: new Map(d.val),
+                rank: unpackRank(d.rank), delta: new Map(d.delta), result: null};
+    if (d.result) st.result = {
+      year: d.result.year, up: d.result.up, down: d.result.down,
+      rank: unpackRank(d.result.rank),
+      res: d.result.res.map(gs => gs.map(r => ({
+        order: r.o, rel: r.rel,
+        matches: r.m.map(([a, b, w, take, round]) =>
+          ({a, b, winner: w, loser: w === a ? b : a, take, round})),
+      }))),
+    };
+    ST[k] = st;
+  });
+  Object.assign(S, o.ui);
+}
+let saveTimer = null;
+function saveSoon(){ clearTimeout(saveTimer); saveTimer = setTimeout(save, 600); }
+async function save(){
+  const stamp = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  try {
+    await Store.set(SAVE_KEY, encode(true));
+    $('saveState').innerHTML = `saved <b>${stamp}</b>`;
+  } catch (e) {
+    try {                                  // too big — drop the match logs
+      await Store.set(SAVE_KEY, encode(false));
+      $('saveState').innerHTML = `saved <b>${stamp}</b>*`;
+    } catch (e2) {
+      $('saveState').textContent = 'not saved';
+      console.warn('save failed', e2);
+    }
+  }
+}
+
 /* ═══ render ═════════════════════════════════════════════════ */
 function renderChrome(st){
   $('branch').innerHTML = Object.entries(BRANCH).map(([k, v]) =>
@@ -3424,6 +3515,8 @@ function renderBoard(st){
     return `<section class="card" data-g="${gi}">
       <div class="head"><span class="gid">${gLabel(gi)}</span>
         <span class="gsize${live.length === sizes[gi] ? ' full' : ''}">${live.length}/${sizes[gi]}</span>
+        ${(!R && sizes.length > 1 && live.length)
+          ? `<button class="gclr" data-clr="${gi}" title="Send this group back to the tray">\u232B</button>` : ''}
         <span class="strip">${strip}</span></div>
       <div class="rows">${body}</div></section>`;
   }).join('');
@@ -3460,7 +3553,7 @@ function highlight(gi, on){
 function draw(){
   const st = state(); renderChrome(st);
   if (!st.result) renderPool(st);
-  renderBoard(st); renderMap(st);
+  renderBoard(st); renderMap(st); saveSoon();
 }
 
 /* ═══ moves ══════════════════════════════════════════════════ */
@@ -3498,6 +3591,11 @@ $('divs').onclick = e => {
   const b = e.target.closest('[data-d]'); if (!b) return;
   S.div = +b.dataset.d; draw();
 };
+$('board').addEventListener('click', e => {
+  const b = e.target.closest('[data-clr]'); if (!b) return;
+  e.stopPropagation();
+  clearGroup(state(), S.div, +b.dataset.clr); draw();
+});
 $('mapBtn').onclick = () => {
   const w = $('mapwrap'); w.hidden = !w.hidden;
   $('mapBtn').setAttribute('aria-pressed', String(!w.hidden));
@@ -3566,6 +3664,12 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   if (e.target.dataset.mv) move(+e.target.dataset.mv, +e.target.value);
 });
+$('reset').onclick = async () => {
+  if (!confirm('Delete the saved game and start over from year 1?')) return;
+  clearTimeout(saveTimer);
+  await Store.del(SAVE_KEY);
+  location.reload();
+};
 $('find').oninput = e => {
   const q = e.target.value.trim().toLowerCase();
   document.querySelectorAll('.r[data-t]').forEach(r => {
@@ -3577,7 +3681,14 @@ $('find').oninput = e => {
   if (first) first.scrollIntoView({block:'center', behavior:'smooth'});
 };
 
-draw();
+(async () => {
+  const raw = await Store.get(SAVE_KEY);
+  if (raw){
+    try { decode(raw); }
+    catch (e){ console.warn('saved game unreadable, starting fresh', e); }
+  }
+  draw();
+})();
 </script>
 </body>
 </html>
