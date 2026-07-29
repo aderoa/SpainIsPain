@@ -145,6 +145,11 @@ circle.t.hi{fill:var(--warn);opacity:1}
   display:flex;align-items:center;font:600 10.5px var(--cond);letter-spacing:.13em;
   text-transform:uppercase;color:var(--muted)}
 .ch b{margin-left:auto;font:400 10px var(--mono);letter-spacing:0}
+.rh{grid-column:1/-1;position:sticky;top:calc(var(--phead) + 19px);z-index:1;
+  background:var(--hole);border-bottom:1px solid var(--grid);padding:2px 8px 2px 15px;
+  display:flex;align-items:center;font:500 10px var(--cond);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
+.rh b{margin-left:auto;font:400 10px var(--mono);letter-spacing:0;opacity:.8}
 .done{padding:24px 14px;color:var(--muted);font-size:12.5px;line-height:1.5}
 .empty{padding:34px 16px;color:var(--muted);font-size:13px;max-width:48ch;line-height:1.55}
 .empty b{color:var(--ink)}
@@ -204,208 +209,208 @@ circle.t.hi{fill:var(--warn);opacity:1}
 
 <script>
 /* ═══ data ═══════════════════════════════════════════════════ */
-const RAW = `United States|US|Americas
-China|CN|Asia
-Japan|JP|Asia
-Germany|DE|Europe
-India|IN|Asia
-France|FR|Europe
-United Kingdom|GB|Europe
-Brazil|BR|Americas
-Italy|IT|Europe
-South Korea|KR|Asia
-Turkey|TR|Europe
-Russia|RU|Europe
-Canada|CA|Americas
-Spain|ES|Europe
-Australia|AU|Oceania
-Mexico|MX|Americas
-Indonesia|ID|Asia
-Netherlands|NL|Europe
-Switzerland|CH|Europe
-Argentina|AR|Americas
-Saudi Arabia|SA|Asia
-Taiwan|TW|Asia
-Sweden|SE|Europe
-Poland|PL|Europe
-Nigeria|NG|Africa
-Belgium|BE|Europe
-Iran|IR|Asia
-Thailand|TH|Asia
-Austria|AT|Europe
-UAE|AE|Asia
-Norway|NO|Europe
-Singapore|SG|Asia
-Israel|IL|Europe
-South Africa|ZA|Africa
-Hong Kong|HK|Asia
-Pakistan|PK|Asia
-Ireland|IE|Europe
-Denmark|DK|Europe
-Philippines|PH|Asia
-Colombia|CO|Americas
-Chile|CL|Americas
-Venezuela|VE|Americas
-Malaysia|MY|Asia
-Finland|FI|Europe
-Iraq|IQ|Asia
-Bangladesh|BD|Asia
-Vietnam|VN|Asia
-Czech Republic|CZ|Europe
-Romania|RO|Europe
-Peru|PE|Americas
-New Zealand|NZ|Oceania
-Greece|GR|Europe
-Qatar|QA|Asia
-Portugal|PT|Europe
-Kazakhstan|KZ|Asia
-Egypt|EG|Africa
-Algeria|DZ|Africa
-Hungary|HU|Europe
-Morocco|MA|Africa
-Angola|AO|Africa
-Ukraine|UA|Europe
-Sudan|SD|Africa
-Ecuador|EC|Americas
-Puerto Rico|PR|Americas
-Cuba|CU|Americas
-Kuwait|KW|Asia
-Slovakia|SK|Europe
-Sri Lanka|LK|Asia
-Dominican Republic|DO|Americas
-Guatemala|GT|Americas
-Ethiopia|ET|Africa
-Syria|SY|Asia
-Kenya|KE|Africa
-Myanmar|MM|Asia
-Lebanon|LB|Asia
-Luxembourg|LU|Europe
-Panama|PA|Americas
-Uruguay|UY|Americas
-Bulgaria|BG|Europe
-Costa Rica|CR|Americas
-Oman|OM|Asia
-Croatia|HR|Europe
-Belarus|BY|Europe
-Tanzania|TZ|Africa
-Ghana|GH|Africa
-Macau|MO|Asia
-Uzbekistan|UZ|Asia
-Slovenia|SI|Europe
-Lithuania|LT|Europe
-Jordan|JO|Asia
-Serbia|RS|Europe
-Azerbaijan|AZ|Europe
-Ivory Coast|CI|Africa
-Turkmenistan|TM|Asia
-DR Congo|CD|Africa
-Bolivia|BO|Americas
-Tunisia|TN|Africa
-Bahrain|BH|Asia
-Uganda|UG|Africa
-Cameroon|CM|Africa
-Latvia|LV|Europe
-Paraguay|PY|Americas
-Estonia|EE|Europe
-Papua New Guinea|PG|Oceania
-Libya|LY|Africa
-Nepal|NP|Asia
-El Salvador|SV|Americas
-Iceland|IS|Europe
-Cyprus|CY|Europe
-Zambia|ZM|Africa
-Honduras|HN|Americas
-Yemen|YE|Asia
-Cambodia|KH|Asia
-Afghanistan|AF|Asia
-Botswana|BW|Africa
-Trinidad and Tobago|TT|Americas
-Senegal|SN|Africa
-Palestine|PS|Asia
-Bosnia|BA|Europe
-Zimbabwe|ZW|Africa
-North Korea|KP|Asia
-Jamaica|JM|Americas
-Laos|LA|Asia
-Mali|ML|Africa
-Georgia|GE|Europe
-Gabon|GA|Africa
-Namibia|NA|Africa
-Nicaragua|NI|Americas
-Brunei|BN|Asia
-Albania|AL|Europe
-Mozambique|MZ|Africa
-Malta|MT|Europe
-Equatorial Guinea|GQ|Africa
-Burkina Faso|BF|Africa
-Mauritius|MU|Africa
-Armenia|AM|Europe
-Guadeloupe|GP|Americas
-Congo|CG|Africa
-North Macedonia|MK|Europe
-Mongolia|MN|Asia
-Chad|TD|Africa
-Madagascar|MG|Africa
-Bahamas|BS|Americas
-Guinea|GN|Africa
-New Caledonia|NC|Oceania
-Benin|BJ|Africa
-Mauritania|MR|Africa
-Haiti|HT|Americas
-Moldova|MD|Europe
-Niger|NE|Africa
-Malawi|MW|Africa
-Kyrgyzstan|KG|Asia
-Rwanda|RW|Africa
-Kosovo|XK|Europe
-Tajikistan|TJ|Asia
-Monaco|MC|Europe
-Liechtenstein|LI|Europe
-Guam|GU|Oceania
-South Sudan|SS|Africa
-French Polynesia|PF|Oceania
-Bermuda|BM|Americas
-French Guiana|GF|Americas
-Timor-Leste|TL|Asia
-Sierra Leone|SL|Africa
-Suriname|SR|Americas
-Montenegro|ME|Europe
-Togo|TG|Africa
-Fiji|FJ|Oceania
-Barbados|BB|Americas
-Eswatini|SZ|Africa
-Eritrea|ER|Africa
-US Virgin Islands|VI|Americas
-Curaçao|CW|Americas
-Cayman Islands|KY|Americas
-Reunion|RE|Africa
-Andorra|AD|Europe
-Mayotte|YT|Africa
-Guyana|GY|Americas
-Burundi|BI|Africa
-Maldives|MV|Asia
-Aruba|AW|Americas
-Bhutan|BT|Asia
-Vatican City|VA|Europe
-Faroe Islands|FO|Europe
-Greenland|GL|Americas
-Gibraltar|GI|Europe
-Belize|BZ|Americas
-Liberia|LR|Africa
-Lesotho|LS|Africa
-Central African Republic|CF|Africa
-Djibouti|DJ|Africa
-San Marino|SM|Europe
-Saint Lucia|LC|Americas
-Saint Martin|MF|Americas
-Antigua and Barbuda|AG|Americas
-Somalia|SO|Africa
-Seychelles|SC|Africa
-Northern Mariana Islands|MP|Oceania
-Guinea-Bissau|GW|Africa
-Martinique|MQ|Americas
-Solomon Islands|SB|Oceania
-Sint Maarten|SX|Americas
+const RAW = `United States|US|Americas|North America|20
+China|CN|Asia|East Asia|10
+Japan|JP|Asia|East Asia|10
+Germany|DE|Europe|Central Europe|3
+India|IN|Asia|South Asia|12
+France|FR|Europe|France & Benelux|2
+United Kingdom|GB|Europe|British Isles|0
+Brazil|BR|Americas|Southern Cone|24
+Italy|IT|Europe|Italy & Alps|6
+South Korea|KR|Asia|East Asia|10
+Turkey|TR|Europe|Anatolia & Levant|9
+Russia|RU|Europe|Eastern Europe|8
+Canada|CA|Americas|North America|20
+Spain|ES|Europe|Iberia|1
+Australia|AU|Oceania|Australasia|25
+Mexico|MX|Americas|Mexico & Central|21
+Indonesia|ID|Asia|Southeast Asia|11
+Netherlands|NL|Europe|France & Benelux|2
+Switzerland|CH|Europe|Central Europe|3
+Argentina|AR|Americas|Southern Cone|24
+Saudi Arabia|SA|Asia|Gulf & Middle East|14
+Taiwan|TW|Asia|East Asia|10
+Sweden|SE|Europe|Nordics|4
+Poland|PL|Europe|Central Europe|3
+Nigeria|NG|Africa|West Africa|16
+Belgium|BE|Europe|France & Benelux|2
+Iran|IR|Asia|Gulf & Middle East|14
+Thailand|TH|Asia|Southeast Asia|11
+Austria|AT|Europe|Central Europe|3
+UAE|AE|Asia|Gulf & Middle East|14
+Norway|NO|Europe|Nordics|4
+Singapore|SG|Asia|Southeast Asia|11
+Israel|IL|Europe|Anatolia & Levant|9
+South Africa|ZA|Africa|Southern Africa|19
+Hong Kong|HK|Asia|East Asia|10
+Pakistan|PK|Asia|South Asia|12
+Ireland|IE|Europe|British Isles|0
+Denmark|DK|Europe|Nordics|4
+Philippines|PH|Asia|Southeast Asia|11
+Colombia|CO|Americas|Andes|23
+Chile|CL|Americas|Southern Cone|24
+Venezuela|VE|Americas|Andes|23
+Malaysia|MY|Asia|Southeast Asia|11
+Finland|FI|Europe|Nordics|4
+Iraq|IQ|Asia|Gulf & Middle East|14
+Bangladesh|BD|Asia|South Asia|12
+Vietnam|VN|Asia|Southeast Asia|11
+Czech Republic|CZ|Europe|Central Europe|3
+Romania|RO|Europe|Balkans|7
+Peru|PE|Americas|Andes|23
+New Zealand|NZ|Oceania|Australasia|25
+Greece|GR|Europe|Balkans|7
+Qatar|QA|Asia|Gulf & Middle East|14
+Portugal|PT|Europe|Iberia|1
+Kazakhstan|KZ|Asia|Central Asia|13
+Egypt|EG|Africa|North Africa|15
+Algeria|DZ|Africa|North Africa|15
+Hungary|HU|Europe|Central Europe|3
+Morocco|MA|Africa|North Africa|15
+Angola|AO|Africa|Central Africa|17
+Ukraine|UA|Europe|Eastern Europe|8
+Sudan|SD|Africa|North Africa|15
+Ecuador|EC|Americas|Andes|23
+Puerto Rico|PR|Americas|Caribbean|22
+Cuba|CU|Americas|Caribbean|22
+Kuwait|KW|Asia|Gulf & Middle East|14
+Slovakia|SK|Europe|Central Europe|3
+Sri Lanka|LK|Asia|South Asia|12
+Dominican Republic|DO|Americas|Caribbean|22
+Guatemala|GT|Americas|Mexico & Central|21
+Ethiopia|ET|Africa|East Africa|18
+Syria|SY|Asia|Gulf & Middle East|14
+Kenya|KE|Africa|East Africa|18
+Myanmar|MM|Asia|Southeast Asia|11
+Lebanon|LB|Asia|Gulf & Middle East|14
+Luxembourg|LU|Europe|France & Benelux|2
+Panama|PA|Americas|Mexico & Central|21
+Uruguay|UY|Americas|Southern Cone|24
+Bulgaria|BG|Europe|Balkans|7
+Costa Rica|CR|Americas|Mexico & Central|21
+Oman|OM|Asia|Gulf & Middle East|14
+Croatia|HR|Europe|Balkans|7
+Belarus|BY|Europe|Eastern Europe|8
+Tanzania|TZ|Africa|East Africa|18
+Ghana|GH|Africa|West Africa|16
+Macau|MO|Asia|East Asia|10
+Uzbekistan|UZ|Asia|Central Asia|13
+Slovenia|SI|Europe|Italy & Alps|6
+Lithuania|LT|Europe|Baltics|5
+Jordan|JO|Asia|Gulf & Middle East|14
+Serbia|RS|Europe|Balkans|7
+Azerbaijan|AZ|Europe|Anatolia & Levant|9
+Ivory Coast|CI|Africa|West Africa|16
+Turkmenistan|TM|Asia|Central Asia|13
+DR Congo|CD|Africa|Central Africa|17
+Bolivia|BO|Americas|Andes|23
+Tunisia|TN|Africa|North Africa|15
+Bahrain|BH|Asia|Gulf & Middle East|14
+Uganda|UG|Africa|East Africa|18
+Cameroon|CM|Africa|Central Africa|17
+Latvia|LV|Europe|Baltics|5
+Paraguay|PY|Americas|Southern Cone|24
+Estonia|EE|Europe|Baltics|5
+Papua New Guinea|PG|Oceania|Melanesia|26
+Libya|LY|Africa|North Africa|15
+Nepal|NP|Asia|South Asia|12
+El Salvador|SV|Americas|Mexico & Central|21
+Iceland|IS|Europe|Nordics|4
+Cyprus|CY|Europe|Anatolia & Levant|9
+Zambia|ZM|Africa|Southern Africa|19
+Honduras|HN|Americas|Mexico & Central|21
+Yemen|YE|Asia|Gulf & Middle East|14
+Cambodia|KH|Asia|Southeast Asia|11
+Afghanistan|AF|Asia|South Asia|12
+Botswana|BW|Africa|Southern Africa|19
+Trinidad and Tobago|TT|Americas|Caribbean|22
+Senegal|SN|Africa|West Africa|16
+Palestine|PS|Asia|Gulf & Middle East|14
+Bosnia|BA|Europe|Balkans|7
+Zimbabwe|ZW|Africa|Southern Africa|19
+North Korea|KP|Asia|East Asia|10
+Jamaica|JM|Americas|Caribbean|22
+Laos|LA|Asia|Southeast Asia|11
+Mali|ML|Africa|West Africa|16
+Georgia|GE|Europe|Anatolia & Levant|9
+Gabon|GA|Africa|Central Africa|17
+Namibia|NA|Africa|Southern Africa|19
+Nicaragua|NI|Americas|Mexico & Central|21
+Brunei|BN|Asia|Southeast Asia|11
+Albania|AL|Europe|Balkans|7
+Mozambique|MZ|Africa|Southern Africa|19
+Malta|MT|Europe|Italy & Alps|6
+Equatorial Guinea|GQ|Africa|Central Africa|17
+Burkina Faso|BF|Africa|West Africa|16
+Mauritius|MU|Africa|East Africa|18
+Armenia|AM|Europe|Anatolia & Levant|9
+Guadeloupe|GP|Americas|Caribbean|22
+Congo|CG|Africa|Central Africa|17
+North Macedonia|MK|Europe|Balkans|7
+Mongolia|MN|Asia|East Asia|10
+Chad|TD|Africa|Central Africa|17
+Madagascar|MG|Africa|East Africa|18
+Bahamas|BS|Americas|Caribbean|22
+Guinea|GN|Africa|West Africa|16
+New Caledonia|NC|Oceania|Melanesia|26
+Benin|BJ|Africa|West Africa|16
+Mauritania|MR|Africa|West Africa|16
+Haiti|HT|Americas|Caribbean|22
+Moldova|MD|Europe|Eastern Europe|8
+Niger|NE|Africa|West Africa|16
+Malawi|MW|Africa|East Africa|18
+Kyrgyzstan|KG|Asia|Central Asia|13
+Rwanda|RW|Africa|East Africa|18
+Kosovo|XK|Europe|Balkans|7
+Tajikistan|TJ|Asia|Central Asia|13
+Monaco|MC|Europe|France & Benelux|2
+Liechtenstein|LI|Europe|Central Europe|3
+Guam|GU|Oceania|Micronesia|27
+South Sudan|SS|Africa|East Africa|18
+French Polynesia|PF|Oceania|Polynesia|28
+Bermuda|BM|Americas|North America|20
+French Guiana|GF|Americas|Southern Cone|24
+Timor-Leste|TL|Asia|Southeast Asia|11
+Sierra Leone|SL|Africa|West Africa|16
+Suriname|SR|Americas|Southern Cone|24
+Montenegro|ME|Europe|Balkans|7
+Togo|TG|Africa|West Africa|16
+Fiji|FJ|Oceania|Melanesia|26
+Barbados|BB|Americas|Caribbean|22
+Eswatini|SZ|Africa|Southern Africa|19
+Eritrea|ER|Africa|East Africa|18
+US Virgin Islands|VI|Americas|Caribbean|22
+Curaçao|CW|Americas|Caribbean|22
+Cayman Islands|KY|Americas|Caribbean|22
+Reunion|RE|Africa|East Africa|18
+Andorra|AD|Europe|Iberia|1
+Mayotte|YT|Africa|East Africa|18
+Guyana|GY|Americas|Southern Cone|24
+Burundi|BI|Africa|East Africa|18
+Maldives|MV|Asia|South Asia|12
+Aruba|AW|Americas|Caribbean|22
+Bhutan|BT|Asia|South Asia|12
+Vatican City|VA|Europe|Italy & Alps|6
+Faroe Islands|FO|Europe|Nordics|4
+Greenland|GL|Americas|North America|20
+Gibraltar|GI|Europe|Iberia|1
+Belize|BZ|Americas|Mexico & Central|21
+Liberia|LR|Africa|West Africa|16
+Lesotho|LS|Africa|Southern Africa|19
+Central African Republic|CF|Africa|Central Africa|17
+Djibouti|DJ|Africa|East Africa|18
+San Marino|SM|Europe|Italy & Alps|6
+Saint Lucia|LC|Americas|Caribbean|22
+Saint Martin|MF|Americas|Caribbean|22
+Antigua and Barbuda|AG|Americas|Caribbean|22
+Somalia|SO|Africa|East Africa|18
+Seychelles|SC|Africa|East Africa|18
+Northern Mariana Islands|MP|Oceania|Micronesia|27
+Guinea-Bissau|GW|Africa|West Africa|16
+Martinique|MQ|Americas|Caribbean|22
+Solomon Islands|SB|Oceania|Melanesia|26
+Sint Maarten|SX|Americas|Caribbean|22
 @
 New York|0|19485394|0|40.71|-74.01
 Los Angeles|0|14614046|0|34.05|-118.24
@@ -2977,14 +2982,14 @@ Milton Keynes|6|1002|0|52.04|-0.76
 Terrassa|13|989|0|41.57|2.02`;
 const [cRaw, tRaw] = RAW.trim().split('\n@\n');
 const COUNTRY = cRaw.split('\n').map(l => {
-  const [name, iso, cont] = l.split('|');
-  return {name, iso: iso.toLowerCase(), cont};
+  const [name, iso, cont, reg, ord] = l.split('|');
+  return {name, iso: iso.toLowerCase(), cont, reg, ord: +ord};
 });
 const TEAM = tRaw.split('\n').map((l, i) => {
   const [name, ci, val, cap, lat, lon] = l.split('|');
   const c = COUNTRY[+ci];
-  return {id:i, name, country:c.name, iso:c.iso, cont:c.cont, val:+val,
-          cap:cap === '1', lat:+lat, lon:+lon};
+  return {id:i, name, country:c.name, iso:c.iso, cont:c.cont, reg:c.reg,
+          ord:c.ord, val:+val, cap:cap === '1', lat:+lat, lon:+lon};
 });
 const CONT_ORDER = {Europe:0, Asia:1, Americas:2, Africa:3, Oceania:4};
 const WAVE = 16;
@@ -3170,6 +3175,7 @@ function autoFillSingle(st, d){
 const bySeed = st => (a, b) => st.seed.get(a) - st.seed.get(b);
 const poolSort = st => (a, b) =>
   (CONT_ORDER[TEAM[a].cont] - CONT_ORDER[TEAM[b].cont]) ||
+  (TEAM[a].ord - TEAM[b].ord) ||
   TEAM[a].country.localeCompare(TEAM[b].country) || st.val.get(b) - st.val.get(a);
 
 /* ═══ draws ══════════════════════════════════════════════════ */
@@ -3473,11 +3479,22 @@ function renderPool(st){
     return;
   }
   const list = free.slice().sort(poolSort(st));
-  const byCont = {};
-  list.forEach(id => byCont[TEAM[id].cont] = (byCont[TEAM[id].cont] || 0) + 1);
-  let out = '', cont = null;
+  const byCont = {}, byReg = {};
   list.forEach(id => {
-    if (TEAM[id].cont !== cont){ cont = TEAM[id].cont; out += `<div class="ch">${cont}<b>${byCont[cont]}</b></div>`; }
+    byCont[TEAM[id].cont] = (byCont[TEAM[id].cont] || 0) + 1;
+    byReg[TEAM[id].reg] = (byReg[TEAM[id].reg] || 0) + 1;
+  });
+  let out = '', cont = null, reg = null;
+  list.forEach(id => {
+    const t = TEAM[id];
+    if (t.cont !== cont){
+      cont = t.cont; reg = null;
+      out += `<div class="ch">${cont}<b>${byCont[cont]}</b></div>`;
+    }
+    if (t.reg !== reg){
+      reg = t.reg;
+      out += `<div class="rh">${reg}<b>${byReg[reg]}</b></div>`;
+    }
     out += row(st, id, -1, false);
   });
   $('poolRows').innerHTML = out;
@@ -3519,17 +3536,18 @@ function renderBoard(st){
     live.forEach(id => tally[TEAM[id].country] = (tally[TEAM[id].country] || 0) + 1);
     const heavy = new Set(Object.entries(tally).filter(([, n]) => n >= 3).map(([c]) => c));
     warn += heavy.size;
-    const strip = live.map(id => `<img src="${flag(TEAM[id].iso)}" alt="" loading="lazy"
-      title="${TEAM[id].country}" class="${heavy.has(TEAM[id].country) ? 'dup' : ''}">`).join('');
+    const seeded = live.slice().sort(bySeed(st));
+    const strip = (R ? live : seeded).map(id => `<img src="${flag(TEAM[id].iso)}" alt=""
+      loading="lazy" title="${TEAM[id].country}"
+      class="${heavy.has(TEAM[id].country) ? 'dup' : ''}">`).join('');
     let body;
     if (R){
       const r = R.res[S.div][gi];
       body = r.order.map(id => row(st, id, gi, heavy.has(TEAM[id].country),
         upSet.has(id) ? 'up' : dnSet.has(id) ? 'dn' : '')).join('') + matchLog(st, r);
     } else {
-      const slots = g.slice();
-      while (slots.length < sizes[gi]) slots.push(null);
-      body = slots.map(id => row(st, id, gi, id !== null && heavy.has(TEAM[id].country))).join('');
+      body = seeded.map(id => row(st, id, gi, heavy.has(TEAM[id].country))).join('');
+      for (let k = seeded.length; k < sizes[gi]; k++) body += row(st, null, gi, false);
     }
     return `<section class="card" data-g="${gi}">
       <div class="head"><span class="gid">${gLabel(gi)}</span>
