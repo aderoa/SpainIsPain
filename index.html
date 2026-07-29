@@ -3008,19 +3008,35 @@ const BRANCH = {
            grps:[1,2,4,8,16,32,64], scope:'cont'},
   nation: {label:'National',     caps:[8,16,32], grps:[1,2,4], scope:'country'},
 };
-function splitGroups(n, g){
+/* A division short of its ceiling spreads the shortfall as undersized groups.
+   Which groups those are is scattered rather than dumped at the end of the
+   list, but it is fixed per save: each group index gets a permanent priority,
+   and the extra team goes to the highest priorities first. So as expansion
+   fills the division a group can only ever gain a place, never lose one. */
+function gHash(i, salt){
+  let x = (i * 2654435761 + salt * 40503 + 0x9E3779B9) >>> 0;
+  x ^= x >>> 16; x = Math.imul(x, 0x21f0aaad) >>> 0;
+  x ^= x >>> 15; x = Math.imul(x, 0x735a2d97) >>> 0;
+  x ^= x >>> 15;
+  return x >>> 0;
+}
+function splitGroups(n, g, salt){
   while (g > 1 && n / g < 4) g--;
-  const base = Math.floor(n / g), extra = n % g, out = [];
-  for (let i = 0; i < g; i++) out.push(i < extra ? base + 1 : base);
+  const base = Math.floor(n / g), extra = n % g;
+  const out = new Array(g).fill(base);
+  if (extra){
+    [...out.keys()].sort((a, b) => gHash(a, salt) - gHash(b, salt))
+      .slice(0, extra).forEach(i => out[i] = base + 1);
+  }
   return out;
 }
-function tiers(all, cfg){
+function tiers(all, cfg, salt){
   const out = []; let left = all, cap = 0, grp = 0;
   for (let i = 0; left > 0; i++){
     if (i < cfg.caps.length){ cap = cfg.caps[i]; grp = cfg.grps[i]; }
     else { cap *= 2; grp *= 2; }
     const n = Math.min(cap, left); left -= n;
-    out.push(splitGroups(n, grp));
+    out.push(splitGroups(n, grp, salt + i * 7919));
   }
   return out;
 }
@@ -3153,8 +3169,9 @@ function scopeList(){
 }
 function fresh(){
   const teams = branchTeams().sort((a, b) => b.val - a.val);
-  const shape = tiers(teams.length, BRANCH[S.branch]);
-  const st = {shape, year:1, rank:new Map(), seed:new Map(), val:new Map(),
+  const salt = Math.floor(Math.random() * 1e9);
+  const shape = tiers(teams.length, BRANCH[S.branch], salt);
+  const st = {shape, salt, year:1, rank:new Map(), seed:new Map(), val:new Map(),
               member:[], groups:[], free:[], result:null, delta:new Map()};
   teams.forEach((t, i) => { st.seed.set(t.id, i + 1); st.val.set(t.id, t.val); });
   let start = 0;
@@ -3305,7 +3322,7 @@ function rollOver(st){
 
 function reshape(st, cfg){
   const n = st.member.reduce((a, m) => a + m.length, 0);
-  const shape = tiers(n, cfg);
+  const shape = tiers(n, cfg, st.salt || 0);
   while (st.groups.length < shape.length){ st.groups.push([]); st.member.push([]); st.free.push([]); }
   shape.forEach((sizes, d) => {
     while (st.groups[d].length < sizes.length) st.groups[d].push([]);
@@ -3373,7 +3390,7 @@ function encode(withResults){
   const out = {live: LIVE, ui: {branch: S.branch, scope: S.scope, div: S.div}, st: {}};
   Object.entries(ST).forEach(([k, st]) => {
     out.st[k] = {
-      shape: st.shape, year: st.year, member: st.member, groups: st.groups,
+      shape: st.shape, salt: st.salt, year: st.year, member: st.member, groups: st.groups,
       free: st.free, seed: [...st.seed], val: [...st.val],
       rank: packRank(st.rank), delta: [...st.delta],
       result: (withResults && st.result) ? {
@@ -3393,7 +3410,7 @@ function decode(json){
   LIVE = o.live;
   Object.keys(ST).forEach(k => delete ST[k]);
   Object.entries(o.st).forEach(([k, d]) => {
-    const st = {shape: d.shape, year: d.year, member: d.member, groups: d.groups,
+    const st = {shape: d.shape, salt: d.salt || 0, year: d.year, member: d.member, groups: d.groups,
                 free: d.free, seed: new Map(d.seed), val: new Map(d.val),
                 rank: unpackRank(d.rank), delta: new Map(d.delta), result: null};
     if (d.result) st.result = {
