@@ -65,10 +65,11 @@ aside.over{box-shadow:inset 0 0 0 2px var(--drop)}
   gap:8px;font:600 11px var(--cond);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .phead span{margin-left:auto;font:400 11px var(--mono);color:var(--muted);
   letter-spacing:0;text-transform:none}
-.scroller{flex:1;overflow:auto;padding:14px}
-.mapwrap{border:1px solid var(--rule);background:#F3F5F2;margin-bottom:14px}
+.scroller{flex:1;overflow:auto}
+.mapwrap{position:sticky;top:0;z-index:5;height:330px;min-height:150px;
+  resize:vertical;overflow:hidden;background:#F3F5F2;
+  border-bottom:1px solid var(--rule)}
 .mapwrap[hidden]{display:none}
-.mapwrap{position:relative;height:330px;min-height:150px;resize:vertical;overflow:hidden}
 .mapwrap svg{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 .mapwrap svg.grabbing{cursor:grabbing}
 #labels text{fill:#2B302C;font-family:var(--sans);font-weight:500;
@@ -84,7 +85,7 @@ aside.over{box-shadow:inset 0 0 0 2px var(--drop)}
 circle.t{fill:#9AA29A;opacity:.55;cursor:pointer}
 circle.t.on{fill:var(--accent);opacity:.8}
 circle.t.hi{fill:var(--warn);opacity:1}
-.board{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.board{display:grid;gap:14px;padding:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .card{border:1px solid var(--rule);background:var(--paper)}
 .card.over{border-color:var(--accent);box-shadow:0 0 0 2px var(--drop)}
 .card>.head{border-bottom:1px solid var(--rule);background:var(--band);
