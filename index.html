@@ -3409,12 +3409,8 @@ function decode(json){
   const o = JSON.parse(json);
   LIVE = o.live;
   Object.keys(ST).forEach(k => delete ST[k]);
-  const migrate = [];
   Object.entries(o.st).forEach(([k, d]) => {
-    // saves written before undersized groups were scattered have no salt:
-    // give them one and rebuild the shape around it
-    if (d.salt === undefined) migrate.push(k);
-    const st = {shape: d.shape, salt: d.salt === undefined ? Math.floor(Math.random() * 1e9) : d.salt,
+    const st = {shape: d.shape, salt: d.salt || Math.floor(Math.random() * 1e9),
                 year: d.year, member: d.member, groups: d.groups,
                 free: d.free, seed: new Map(d.seed), val: new Map(d.val),
                 rank: unpackRank(d.rank), delta: new Map(d.delta), result: null};
@@ -3429,9 +3425,13 @@ function decode(json){
     };
     ST[k] = st;
   });
-  migrate.forEach(k => {
-    const cut = k.indexOf('|');
-    reshape(ST[k], BRANCH[k.slice(0, cut)]);
+  // The shape is derived from member counts + salt, never authoritative in the
+  // save — recompute it so a layout change reaches games already in progress.
+  // Skip a division set that is mid-results, where the shape matches the
+  // season already played.
+  Object.entries(ST).forEach(([k, st]) => {
+    if (st.result) return;
+    reshape(st, BRANCH[k.slice(0, k.indexOf('|'))]);
   });
   Object.assign(S, o.ui);
 }
