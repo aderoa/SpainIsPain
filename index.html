@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
-<!-- build 2026-08-02 · bracket preview + palmarès -->
+<!-- build 2026-08-02b · bracket preview + palmarès + season rollover + team history -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -259,6 +259,30 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .pal-t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pal-tbd{color:var(--dim,#aab2ba)}
 .pal-wrap{max-height:50vh;overflow:auto}
+
+[data-team]{cursor:pointer}
+[data-team]:hover{text-decoration:underline;text-underline-offset:2px}
+#teamOverlay{position:fixed;inset:0;z-index:220;background:rgba(12,16,20,.72);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+#teamOverlay[hidden]{display:none}
+.tm-sum{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;padding-bottom:4px}
+.tm-sum b{font-variant-numeric:tabular-nums}
+.tm-sec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--dim,#8a949e);margin:14px 0 6px}
+.tm-h,.tm-r{display:grid;grid-template-columns:52px 1fr 46px 66px 58px;gap:8px;
+  align-items:center;font-size:11.5px;padding:3px 0}
+.tm-hh,.tm-hr{display:grid;grid-template-columns:1fr 44px 44px 44px 54px;gap:8px;
+  align-items:center;font-size:11.5px;padding:3px 0}
+.tm-h,.tm-hh{font-weight:650;border-bottom:1px solid rgba(0,0,0,.12);
+  margin-bottom:4px;color:var(--dim,#6b7783)}
+.tm-r,.tm-hr{border-bottom:1px solid rgba(0,0,0,.05)}
+.tm-r:hover,.tm-hr:hover{background:rgba(0,0,0,.03)}
+.tm-y{font-weight:650;font-variant-numeric:tabular-nums}
+.tm-n{font-variant-numeric:tabular-nums;text-align:right}
+.tm-gold{color:#b8860b;font-weight:700}
+.tm-wrap{max-height:30vh;overflow:auto}
+.tm-opp{display:flex;align-items:center;gap:5px;min-width:0}
+.tm-opp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -320,7 +344,21 @@ circle.t.hi{fill:var(--warn);opacity:1}
     <div class="pal-divs" id="palDivs"></div>
     <div class="so-body" id="palBody"></div>
     <div class="so-foot">
+      <button class="btn" id="palClear" title="Delete every recorded tournament result">Clear history</button>
       <button class="btn go" id="palClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="teamOverlay" hidden>
+  <div class="so-box">
+    <div class="so-head">
+      <div class="so-title" id="tmTitle">Team</div>
+      <div class="so-prog" id="tmProg"></div>
+    </div>
+    <div class="so-body" id="tmBody"></div>
+    <div class="so-foot">
+      <button class="btn go" id="tmClose">Close</button>
     </div>
   </div>
 </div>
@@ -3334,17 +3372,98 @@ const HIST_KEY = 'worldleague.hist.v1';
 const HIST_MAX = 8000;
 let HIST = [];
 
+/* ── HEAD TO HEAD ───────────────────────────────────────────────────────
+   Seven thousand matches a season is far too many to keep one by one -- that
+   is what pushed the save over its quota once already. Keep a COUNT instead:
+   one entry per pair of teams, "lower|higher" -> [wins by lower, wins by
+   higher]. A pair that meets every year costs the same as a pair that met
+   once.
+
+   Split in two on purpose. `cur` is this season only; `all` is every season
+   before it, folded in at roll-over. An aggregate cannot be un-added, so
+   replaying a season would otherwise count its matches twice -- with the
+   current season kept separately, a replay simply throws `cur` away. */
+const H2H_KEY = 'worldleague.h2h.v1';
+const H2H_MAX = 30000;
+let H2H = { cur: {}, all: {} };
+
+function h2hAdd(a, b, w){
+  if (a == null || b == null || a === b) return;
+  const lo = Math.min(a, b), hi = Math.max(a, b);
+  const k = lo + '|' + hi;
+  const e = H2H.cur[k] || (H2H.cur[k] = [0, 0]);
+  if (w === lo) e[0]++; else e[1]++;
+}
+
+/* Close the books on a season: this year's meetings join the all-time count. */
+function h2hFold(){
+  Object.keys(H2H.cur).forEach(k => {
+    const c = H2H.cur[k], a = H2H.all[k] || (H2H.all[k] = [0, 0]);
+    a[0] += c[0]; a[1] += c[1];
+  });
+  H2H.cur = {};
+  const keys = Object.keys(H2H.all);
+  if (keys.length > H2H_MAX){
+    /* Over the cap the least-informative pairs go first: two teams that have
+       met once say almost nothing, a pair with twenty meetings is the record
+       worth keeping. */
+    keys.sort((x, y) => (H2H.all[y][0] + H2H.all[y][1]) - (H2H.all[x][0] + H2H.all[x][1]));
+    const keep = {};
+    keys.slice(0, H2H_MAX).forEach(k => keep[k] = H2H.all[k]);
+    H2H.all = keep;
+  }
+}
+
+/* Everyone this team has ever played, most-met first. */
+function h2hFor(id){
+  const out = new Map();
+  const take = src => Object.keys(src).forEach(k => {
+    const cut = k.indexOf('|'), lo = +k.slice(0, cut), hi = +k.slice(cut + 1);
+    if (lo !== id && hi !== id) return;
+    const v = src[k], other = lo === id ? hi : lo;
+    const e = out.get(other) || { w: 0, l: 0 };
+    e.w += lo === id ? v[0] : v[1];
+    e.l += lo === id ? v[1] : v[0];
+    out.set(other, e);
+  });
+  take(H2H.all); take(H2H.cur);
+  return [...out].map(([oid, e]) => ({ oid, w: e.w, l: e.l, n: e.w + e.l }))
+                 .filter(x => x.n > 0 && TEAM[x.oid])
+                 .sort((a, b) => b.n - a.n || b.w - a.w);
+}
+
 function recordTournament(entry, res, st){
   res.forEach((r, gi) => {
     const o = r.order || [];
     if (!o.length) return;
+    /* Every meeting in this group, counted rather than listed. */
+    (r.matches || []).forEach(m => h2hAdd(m.a, m.b, m.winner));
+    /* `o` is the FULL finishing order, which is what makes a team history
+       possible: the podium alone can only say who won. It is ids, so a group
+       of thirty-two costs about as much as one short sentence. */
     HIST.push({ y: st.year, b: entry.branch, s: entry.scope || '', d: entry.div,
                 g: res.length > 1 ? gi : -1,
                 w: o[0], r2: o[1] != null ? o[1] : -1, r3: o[2] != null ? o[2] : -1,
+                o: o.slice(),
                 up: (r.pro || []).slice(), dn: (r.rel || []).slice(),
                 m: (r.matches || []).length });
   });
   if (HIST.length > HIST_MAX) HIST = HIST.slice(-HIST_MAX);
+}
+
+/* Wipe one season's record. Replaying a season re-plays every fixture in it,
+   so its old rows have to go or the palmares shows the same year twice --
+   which is exactly what a run of test seasons produced. */
+function dropSeasonHistory(y){
+  HIST = HIST.filter(h => h.y !== y);
+  H2H.cur = {};                       // the meetings are about to happen again
+}
+function dropCompHistory(branch, scope){
+  HIST = HIST.filter(h => !(h.b === branch && h.s === (scope || '')));
+}
+function clearHistory(){
+  HIST = [];
+  H2H = { cur: {}, all: {} };
 }
 
 const SNAP = {};
@@ -3387,6 +3506,7 @@ function restoreSeason(){
     st.divResults = {};
     // st.groups is left exactly as it is -- that is the point
   });
+  dropSeasonHistory(yNow);        // this season is about to be played again
   QUEUE.qi = 0; QUEUE.cur = null; QUEUE.mi = 0;
   QUEUE.replay++;                 // so the same fixtures roll differently
   return true;
@@ -3582,6 +3702,34 @@ function stepSeason(){
             remaining: QUEUE.list.length - QUEUE.qi };
 }
 
+/* ── END OF SEASON ──────────────────────────────────────────────────────
+   The world season used to stop when the queue ran out and simply sit there:
+   nobody was promoted, nobody relegated, and the year never advanced -- so a
+   second run replayed year 1 and the history filled with duplicate year 1
+   rows. Settle every competition that was actually played, roll it over, and
+   let the calendar move. Year 1 is the first season; every completed season
+   moves it on by one. */
+function rollWorldSeason(){
+  let moved = 0;
+  Object.keys(ST).forEach(k => {
+    const st = ST[k];
+    if (!st || !st.shape) return;
+    const res = st.shape.map((_, d) => (st.divResults && st.divResults[d]) || []);
+    if (!res.some(g => g.length)) return;          // never played: leave it alone
+    settleResults(st, res, null);
+    rollOver(st);
+    st.divResults = {};
+    moved++;
+  });
+  if (!moved) return 0;
+  expand();
+  h2hFold();                                       // this year's meetings are now history
+  QUEUE.list = []; QUEUE.qi = 0; QUEUE.cur = null; QUEUE.mi = 0;
+  QUEUE.savedMi = 0; QUEUE.savedVal = null; QUEUE.resumeAt = 0;
+  Object.keys(SNAP).forEach(x => delete SNAP[x]);  // belonged to the season just closed
+  return moved;
+}
+
 /* ── SAVED GROUP LAYOUTS ────────────────────────────────────────────────
    Drawing every competition by hand is impossible once the continents and
    countries are in the queue, so each one's distribution is remembered and
@@ -3737,7 +3885,14 @@ function simulateSeason(st){
   const before = new Map(st.val);
   const res = st.groups.map((gs, d) => gs.map(g =>
     runGroup(st, g.filter(x => x !== null).sort(bySeed(st)), roll)));
+  return settleResults(st, res, before);
+}
 
+/* Turn a division-by-division set of results into the season's verdict: who
+   goes up, who goes down, and where everybody finished. Split out of
+   simulateSeason because the world season produces exactly the same `res`, one
+   competition at a time, and needs the identical settlement to roll over. */
+function settleResults(st, res, before){
   const demand = st.shape.map(sizes => total(sizes.map(relPer)));
   const D = st.shape.length, up = [], down = [];
   for (let d = 0; d < D; d++){ up.push([]); down.push([]); }
@@ -3762,10 +3917,10 @@ function simulateSeason(st){
     flat.forEach((id, i) => rank.set(id, {d, p: i + 1}));
   });
   const delta = new Map();
-  st.val.forEach((v, id) => delta.set(id, v - (before.get(id) || v)));
+  if (before) st.val.forEach((v, id) => delta.set(id, v - (before.get(id) || v)));
 
   st.result = {res, up, down, rank, year: st.year};
-  st.delta = delta;
+  if (before) st.delta = delta;
   return st.result;
 }
 
@@ -3960,6 +4115,12 @@ async function save(){
     try { HIST = HIST.slice(-2000); await Store.set(HIST_KEY, JSON.stringify(HIST)); }
     catch (e2) { console.warn('history not saved', e2); }
   }
+  // head-to-head counts, also in their own key so they can be trimmed alone
+  try { await Store.set(H2H_KEY, JSON.stringify(H2H)); }
+  catch (e) {
+    try { H2H.cur = {}; await Store.set(H2H_KEY, JSON.stringify(H2H)); }
+    catch (e2) { console.warn('head-to-head not saved', e2); }
+  }
 
   /* The game state, shedding weight until it fits. Match logs are the bulk of
      it -- 7,000 a season -- so they go first; the season snapshot used for
@@ -4020,7 +4181,7 @@ function row(st, id, gi, heavy, cls){
   return `<div class="r ${cls || ''}" data-t="${id}" ${st.result ? '' : 'draggable="true"'}>
     <div class="seed">${tag(st, id)}</div>
     <div class="fl"><img src="${flag(t.iso)}" alt="${t.country}" title="${t.country}" loading="lazy"></div>
-    <div class="nm${heavy ? ' warn' : ''}">${t.name}${t.cap ? '<span class="cap">★</span>' : ''}</div>
+    <div class="nm${heavy ? ' warn' : ''}" data-team="${id}">${t.name}${t.cap ? '<span class="cap">★</span>' : ''}</div>
     ${valCell(st, id)}
     ${opts ? `<div class="mv"><select data-mv="${id}">${opts}</select></div>` : ''}</div>`;
 }
@@ -4212,7 +4373,7 @@ function renderMap(st){
   dotEl.clear();
   $('dots').innerHTML = ids.map(id => {
     const t = TEAM[id];
-    return `<circle class="t${placed.has(id) ? ' on' : ''}" data-t="${id}"
+    return `<circle class="t${placed.has(id) ? ' on' : ''}" data-t="${id}" data-team="${id}"
       data-r="${placed.has(id) ? 1 : .8}" cx="${t.lon}" cy="${-t.lat}"
       ><title>${t.name} \u2014 ${t.country}</title></circle>`;
   }).join('');
@@ -4397,7 +4558,7 @@ function soBracket(item, L, preview){
       if (!seen(m, id)) return '<div class="bk-t bk-tbd">&mdash;</div>';
       const t = TEAM[id];
       const v = L && L.get(id);
-      return `<div class="bk-t ${played ? (isWin ? 'bk-win' : 'bk-lose') : 'bk-wait'}">
+      return `<div class="bk-t ${played ? (isWin ? 'bk-win' : 'bk-lose') : 'bk-wait'}" data-team="${id}">
         <img src="${flag(t.iso)}" alt="" width="14" height="10">
         <span>${t.name}</span>
         ${v != null ? `<i class="bk-v">${num(Math.round(v))}</i>` : ''}</div>`;
@@ -4450,7 +4611,7 @@ function soRender(step){
   const A = TEAM[m.a], B = TEAM[m.b];
   const L = step.live;
   const wid = m.winner, lid = m.loser;
-  const side = (t, id) => `<div class="so-team ${pv ? 'pv' : (id === wid ? 'win' : 'lose')}">
+  const side = (t, id) => `<div class="so-team ${pv ? 'pv' : (id === wid ? 'win' : 'lose')}" data-team="${id}">
       <img src="${flag(t.iso)}" alt="" width="20" height="14">
       <span class="so-name">${t.name}</span>
       <span class="so-val">${num(Math.round(L.get(id)))}</span>
@@ -4497,7 +4658,7 @@ function soTable(comp, only){
                  : dn.has(id) ? 'tb-rdn' : ''}">
         <span class="tb-p">${i + 1}</span>
         <img src="${flag(t.iso)}" alt="" width="14" height="10">
-        <span class="tb-n">${t.name}</span>
+        <span class="tb-n" data-team="${id}">${t.name}</span>
         <i class="tb-v">${num(Math.round(L.get(id)))}</i>${mark}</div>`;
     }).join('');
     return `<div class="tb-col">${comp.res.length > 1
@@ -4546,7 +4707,7 @@ const PAL = {div:0};
 function palTeam(id){
   const t = (id == null || id < 0) ? null : TEAM[id];
   if (!t) return '<span class="pal-tbd">\u2014</span>';
-  return `<span class="pal-t"><img src="${flag(t.iso)}" alt="" width="14" height="10"><b>${t.name}</b></span>`;
+  return `<span class="pal-t" data-team="${id}"><img src="${flag(t.iso)}" alt="" width="14" height="10"><b>${t.name}</b></span>`;
 }
 
 function palRender(){
@@ -4612,6 +4773,104 @@ function palRender(){
      <div class="pal-wrap">${body}</div>`;
 }
 
+/* ── TEAM ───────────────────────────────────────────────────────────────
+   Everything here is a reading of what is already stored. The full finishing
+   order on each history row gives the club's placing in every tournament it
+   played; the head-to-head counts give the record against everyone it has
+   met. Nothing extra is recorded to build this screen. */
+const TM = { id: null };
+
+function tmCompLabel(h){
+  return BRANCH[h.b] ? BRANCH[h.b].label + (h.s ? ' \u00b7 ' + h.s : '') : (h.s || '?');
+}
+
+function tmHistory(id){
+  const out = [];
+  HIST.forEach(h => {
+    const o = h.o;
+    if (!Array.isArray(o)) return;            // rows from before the order was kept
+    const p = o.indexOf(id);
+    if (p < 0) return;
+    out.push({ y: h.y, comp: tmCompLabel(h), d: h.d, g: h.g, p: p + 1, of: o.length });
+  });
+  return out.sort((a, b) => b.y - a.y || a.d - b.d || a.comp.localeCompare(b.comp));
+}
+
+function teamOpen(id){
+  if (!TEAM[id]) return;
+  TM.id = id;
+  $('teamOverlay').hidden = false;
+  tmRender();
+}
+
+function tmRender(){
+  const id = TM.id, t = TEAM[id];
+  if (!t) return;
+  const rows = tmHistory(id), h2h = h2hFor(id);
+  const titles = rows.filter(r => r.p === 1).length;
+  const best = rows.length ? Math.min(...rows.map(r => r.p)) : null;
+  const played = h2h.reduce((n, x) => n + x.n, 0);
+  const won = h2h.reduce((n, x) => n + x.w, 0);
+
+  $('tmTitle').innerHTML =
+    `<img src="${flag(t.iso)}" alt="" width="20" height="14" style="vertical-align:-2px;margin-right:7px">${t.name}`;
+  $('tmProg').textContent = t.country + (t.cont ? ' \u00b7 ' + t.cont : '') +
+    ' \u00b7 worth ' + num(Math.round(VAL.get(id) != null ? VAL.get(id) : t.val));
+
+  const sum = `<div class="tm-sum">
+    <span>Tournaments <b>${rows.length}</b></span>
+    <span>Won <b class="${titles ? 'tm-gold' : ''}">${titles}</b></span>
+    ${best ? `<span>Best finish <b>${best === 1 ? '1st' : best === 2 ? '2nd' : best === 3 ? '3rd' : best + 'th'}</b></span>` : ''}
+    <span>Matches <b>${played}</b></span>
+    ${played ? `<span>Record <b>${won}\u2013${played - won}</b> (${Math.round(100 * won / played)}%)</span>` : ''}
+  </div>`;
+
+  const hist = rows.length
+    ? `<div class="tm-h"><span>Year</span><span>Competition</span><span>Div</span>
+         <span>Group</span><span class="tm-n">Placed</span></div>
+       <div class="tm-wrap">${rows.map(r => `<div class="tm-r">
+         <span class="tm-y">${r.y}</span>
+         <span class="tm-opp"><span>${r.comp}</span></span>
+         <span>D${r.d + 1}</span>
+         <span>${r.g < 0 ? '\u2014' : gLabel(r.g)}</span>
+         <span class="tm-n ${r.p === 1 ? 'tm-gold' : ''}">${r.p} / ${r.of}</span>
+       </div>`).join('')}</div>`
+    : '<div class="so-done">No completed tournament on record yet.</div>';
+
+  const mh = h2h.length
+    ? `<div class="tm-hh"><span>Opponent</span><span class="tm-n">P</span>
+         <span class="tm-n">W</span><span class="tm-n">L</span><span class="tm-n">Win %</span></div>
+       <div class="tm-wrap">${h2h.map(x => {
+         const o = TEAM[x.oid];
+         return `<div class="tm-hr">
+           <span class="tm-opp" data-team="${x.oid}">
+             <img src="${flag(o.iso)}" alt="" width="14" height="10"><span>${o.name}</span></span>
+           <span class="tm-n">${x.n}</span><span class="tm-n">${x.w}</span>
+           <span class="tm-n">${x.l}</span>
+           <span class="tm-n">${Math.round(100 * x.w / x.n)}%</span>
+         </div>`; }).join('')}</div>`
+    : '<div class="so-done">Nobody has been played yet.</div>';
+
+  $('tmBody').innerHTML = sum +
+    `<div class="tm-sec">Season by season</div>${hist}` +
+    `<div class="tm-sec">Head to head</div>${mh}`;
+}
+
+/* The end of a season, reached from two places: the peek that finds the queue
+   already spent, and the ordinary step that runs it dry. Both used to close up
+   on their own and the roll-over hung off only one of them -- so whichever
+   path the player happened to take decided whether the year advanced. One
+   exit, one roll-over.
+
+   Order matters: the summary card reads the current year and lists that year's
+   history, so it is drawn BEFORE the calendar moves. */
+function soFinish(){
+  soRender(null);
+  try { draw(); } catch (err) {}
+  SO.running = false; SO.auto = false;
+  saveSoon();
+}
+
 function soStep(){
   /* The last match of a competition has been watched -- show its final table
      before the queue rolls on, so promotion and relegation are read where they
@@ -4635,11 +4894,7 @@ function soStep(){
      "play the rest" is not asking to be stopped. */
   if (!SO.auto){
     const peek = stepMatch(true);
-    if (!peek){                                  // season finished on the peek
-      soRender(null);
-      try { draw(); } catch (err) {}
-      SO.running = false; SO.auto = false; saveSoon(); return;
-    }
+    if (!peek){ soFinish(); return; }            // season finished on the peek
     const mark = QUEUE.qi + '|' + peek.item.gi;
     const firstOfGroup = QUEUE.mi === 0 ||
                          QUEUE.cur.flat[QUEUE.mi - 1].gi !== peek.item.gi;
@@ -4656,9 +4911,9 @@ function soStep(){
      128 of them, so waiting for the competition meant 944 matches before the
      first table. The division-wide card still follows the last group. */
   if (step && step.lastOfGroup) SO.pendingTable = { comp: step.comp, gi: step.item.gi };
+  if (!step){ soFinish(); return; }
   soRender(step);
   try { draw(); } catch (err) {}          // the board follows the ledger
-  if (!step){ SO.running = false; SO.auto = false; saveSoon(); return; }
   if (SO.auto) setTimeout(soStep, SO.speed || 220);
   else saveSoon();
 }
@@ -4686,20 +4941,31 @@ $('worldSeason').onclick = () => {
      so after a reload it sent you back to the first competition. Rebuild the
      list, then put the position back. */
   const wasAt = QUEUE.qi;
+  /* The season is settled HERE, when the next one is asked for -- not the
+     instant the last match ends. Everything on the completion card belongs to
+     the season just played, Replay season included, and a replay only works
+     while nobody has been promoted yet. Ask for the next season and the year
+     moves on; sit on the card and it does not. */
   if (!QUEUE.list.length){
     buildQueue();
-    QUEUE.qi = Math.min(wasAt, QUEUE.list.length);
-    /* Mid-competition when we stopped: step back onto it, put the ledger where
-       it was at its first match, and let stepMatch fast-forward to the game we
-       had reached. */
-    if (QUEUE.savedMi > 0 && QUEUE.qi > 0){
-      QUEUE.qi--;
-      if (QUEUE.savedVal){ VAL.clear(); QUEUE.savedVal.forEach(([id, v]) => VAL.set(id, v)); }
-      QUEUE.resumeAt = QUEUE.savedMi;
+    if (wasAt >= QUEUE.list.length){           // the saved season had finished
+      rollWorldSeason(); buildQueue(); QUEUE.qi = 0;
+      QUEUE.savedMi = 0; QUEUE.savedVal = null;
+    } else {
+      QUEUE.qi = Math.min(wasAt, QUEUE.list.length);
+      /* Mid-competition when we stopped: step back onto it, put the ledger where
+         it was at its first match, and let stepMatch fast-forward to the game we
+         had reached. */
+      if (QUEUE.savedMi > 0 && QUEUE.qi > 0){
+        QUEUE.qi--;
+        if (QUEUE.savedVal){ VAL.clear(); QUEUE.savedVal.forEach(([id, v]) => VAL.set(id, v)); }
+        QUEUE.resumeAt = QUEUE.savedMi;
+      }
+      QUEUE.savedMi = 0; QUEUE.savedVal = null;
     }
-    QUEUE.savedMi = 0; QUEUE.savedVal = null;
   } else if (QUEUE.qi >= QUEUE.list.length){
-    buildQueue();                              // the season is over: start again
+    rollWorldSeason();                         // settle it, then draw the new one
+    buildQueue();
   }
   if (QUEUE.qi === 0) snapshotSeason();       // a fresh season -- remember where it started
   SO.shown = null;                            // previews are per visit
@@ -4723,6 +4989,30 @@ $('palDivs').onclick = e => {
   const b = e.target.closest('[data-pd]'); if (!b) return;
   PAL.div = +b.dataset.pd; palRender();
 };
+$('palClear').onclick = () => {
+  if (!HIST.length && !Object.keys(H2H.all).length && !Object.keys(H2H.cur).length){
+    alert('There is nothing recorded yet.');
+    return;
+  }
+  if (!confirm('Clear the whole history?\n\nEvery recorded winner, placing and ' +
+               'head-to-head record is deleted. The league itself \u2014 groups, ' +
+               'values, standings \u2014 is untouched.')) return;
+  clearHistory();
+  palRender();
+  saveSoon();
+};
+
+/* A team is a link wherever its name appears: the board, the pool, the map,
+   a bracket, the live match, a recap table, the palmares, and inside this
+   panel itself, so one opponent leads to the next. */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-team]');
+  if (!el) return;
+  const id = +el.dataset.team;
+  if (!TEAM[id]) return;
+  teamOpen(id);
+});
+$('tmClose').onclick = () => { $('teamOverlay').hidden = true; };
 $('soQuit').onclick = () => { SO.auto = false; soShow(false); draw(); save(); };
 
 /* Replay: same groups, same teams, same values as at kick-off -- different
@@ -4806,6 +5096,7 @@ $('restartComp').onclick = () => {
   if (!confirm('Restart ' + name + ' from year 1?\n\n' +
                'Its groups, results and team values are cleared. Every other competition is left alone.')) return;
   const k = key();
+  dropCompHistory(S.branch, S.scope);    // it is going back to year 1
   delete LAYOUT[layoutKey(S.branch, S.scope)];
   ST[k] = fresh();
   QUEUE.list = [];                       // rebuilt on the next step
@@ -4818,6 +5109,8 @@ $('reset').onclick = async () => {
   if (!confirm('Delete the saved game and start over from year 1?')) return;
   clearTimeout(saveTimer);
   await Store.del(SAVE_KEY);
+  try { await Store.del(HIST_KEY); } catch (e) {}
+  try { await Store.del(H2H_KEY); } catch (e) {}
   location.reload();
 };
 $('find').oninput = e => {
@@ -4833,6 +5126,10 @@ $('find').oninput = e => {
 
 (async () => {
   try { const h = await Store.get(HIST_KEY); if (h) HIST = JSON.parse(h) || []; } catch (e) { HIST = []; }
+  try {
+    const q = await Store.get(H2H_KEY);
+    if (q){ const o = JSON.parse(q); if (o && o.all) H2H = { cur: o.cur || {}, all: o.all }; }
+  } catch (e) { H2H = { cur: {}, all: {} }; }
   const raw = await Store.get(SAVE_KEY);
   if (raw){
     try { decode(raw); }
