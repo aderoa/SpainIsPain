@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
-<!-- build 2026-08-02d · + bronze/relegation brackets, larger panel -->
+<!-- build 2026-08-02e · + bronze/relegation brackets, no spoilers, larger panel -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -3649,7 +3649,7 @@ function stepMatch(peek){
       if (bottom && typeof m.round === 'string' && m.round !== 'bronze') return;
       flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r });
     }));
-    QUEUE.cur = { comp, flat, live: VAL, recorded: new Set() };
+    QUEUE.cur = { comp, flat, live: VAL, recorded: new Set(), bottom: !!bottom };
     QUEUE.mi = 0;
     if (QUEUE.resumeAt){                       // replay the takes we had already seen
       const upto = Math.min(QUEUE.resumeAt, flat.length);
@@ -4631,18 +4631,23 @@ function soBracket(item, L, preview){
   const rounds = [];
   main.forEach(m => { (rounds[m.round - 1] = rounds[m.round - 1] || []).push(m); });
 
-  /* A team belongs in round r only once it has won its round r-1 tie. The
-     first version asked merely "has this team won any played match", so a
-     quarter-final winner appeared in the FINAL as well as the semis -- the
-     bracket ran ahead of the games. Look at the immediately preceding round
-     only. A team with no tie in that round had a bye and is known from the
-     draw. */
+  /* A team appears in a tie only once the tie that SENT IT THERE has been
+     played. Asked as "has it won the previous numbered round", this worked for
+     the main bracket and quietly failed everywhere else: the third-place game
+     and the relegation play-off carry no round number, so the lookup found no
+     feeder, read it as a bye, and printed both line-ups from the start -- the
+     beaten semi-finalists were on screen before the semis were played.
+
+     Ask it generically instead: the last tie this team played before this one.
+     Round one has none and comes from the draw, a bye has none either, and
+     everything else -- semis, final, bronze, play-off -- waits for its feeder.
+     A team that lost cannot appear here anyway, or this tie would not list it. */
   const seen = (m, id) => {
-    if (m.round === 1) return true;
-    const prev = main.filter(x => x.round === m.round - 1);
-    const feeder = prev.find(x => x.a === id || x.b === id);
-    if (!feeder) return true;                       // bye
-    return feeder.winner === id && all.indexOf(feeder) <= upto;
+    const at = all.indexOf(m);
+    for (let i = at - 1; i >= 0; i--){
+      if (all[i].a === id || all[i].b === id) return i <= upto;
+    }
+    return true;                                    // nothing before it: the draw
   };
 
   const cell = (m) => {
@@ -4692,7 +4697,13 @@ function soBracket(item, L, preview){
      a bracket rather than listed as a footnote. The rounds are not numbered on
      the match, but they can be read off the shape: a tie whose entrants
      include a loser from the round being built starts the next one. */
-  const saves = all.filter(m => m.round === 'save');
+  /* Nothing is relegated OUT of the bottom division, so its play-off decides
+     nothing and is not played -- stepMatch already drops those fixtures from
+     the queue. The bracket reads the group's own match list, which still holds
+     them, so it has to make the same exclusion or it draws a knockout that
+     never happens. */
+  const saves = (QUEUE.cur && QUEUE.cur.bottom)
+    ? [] : all.filter(m => m.round === 'save');
   let relBk = '';
   if (saves.length){
     const relRounds = [];
