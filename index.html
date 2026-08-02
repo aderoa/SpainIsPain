@@ -221,6 +221,8 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .tb-n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tb-v{font-style:normal;font-size:10px;color:var(--dim,#98a2ab);font-variant-numeric:tabular-nums}
 .tb-up{color:#0a7;font-weight:700}.tb-dn{color:#c33;font-weight:700}
+.tb-el{color:#b8860b;font-weight:700}
+.tb-rel{background:rgba(184,134,11,.11)}
 .tb-foot{display:flex;gap:14px;font-size:11.5px;padding-top:9px;margin-top:8px;border-top:1px solid rgba(0,0,0,.08)}
 .sm-h,.sm-r{display:grid;grid-template-columns:1.1fr 1.4fr 1.4fr;gap:10px;font-size:11.5px;padding:3px 0}
 .sm-h{font-weight:650;border-bottom:1px solid rgba(0,0,0,.12);margin-bottom:4px}
@@ -3402,16 +3404,15 @@ function stepMatch(){
       if (bottom && typeof m.round === 'string' && m.round !== 'bronze') return;
       flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r });
     }));
-    QUEUE.cur = { comp, flat, live: new Map(comp.val0) };
+    QUEUE.cur = { comp, flat, live: VAL };
     QUEUE.mi = 0;
     if (!flat.length) continue;                          // a group of one: skip on
   }
   const item = QUEUE.cur.flat[QUEUE.mi++];
   // settle this match's money in the running ledger
   if (item.m.take){
-    const L = QUEUE.cur.live;
-    L.set(item.m.winner, (L.get(item.m.winner) || 0) + item.m.take);
-    L.set(item.m.loser,  (L.get(item.m.loser)  || 0) - item.m.take);
+    VAL.set(item.m.winner, (VAL.get(item.m.winner) || 0) + item.m.take);
+    VAL.set(item.m.loser,  (VAL.get(item.m.loser)  || 0) - item.m.take);
   }
   const nxt = QUEUE.cur.flat[QUEUE.mi];
   return { comp: QUEUE.cur.comp, item, live: QUEUE.cur.live,
@@ -3460,6 +3461,13 @@ function stepSeason(){
   const groups = st.groups[e.div] || [];
   const res = groups.map(g => runGroup(st, g.filter(x => x !== null).sort(bySeed(st)), roll));
 
+  /* runGroup has just played every group in the division and moved everybody's
+     money, so the board showed end-of-division values for teams whose group had
+     not been watched yet -- Hagåtña rich before his group kicked off. Rewind
+     the ledger; the viewer re-applies each take as its match is seen, so the
+     board only ever shows what has actually happened. */
+  VAL.clear(); val0.forEach((v, id) => VAL.set(id, v));
+
   /* runGroup leaves `pro` empty -- promotion is a division-wide decision made
      at roll-over, not something a single group can settle. Fill it in here so
      the table can show it, and clear `rel` in the bottom division, which has
@@ -3468,12 +3476,22 @@ function stepSeason(){
      Who goes up: the group winner, plus the runner-up where the division
      above needs two per group to balance what it relegates. */
   const last = e.div === st.shape.length - 1;
-  const above = e.div > 0 ? st.shape[e.div - 1].length : 0;
-  const perGroup = (above && res.length) ? Math.max(1, Math.round(above * 2 / res.length)) : 1;
+  /* How many places the division above actually has: what it relegates. A
+     group of more than eight sends four down, a smaller one two. If that
+     covers every group here, each winner goes up for certain. If it does not
+     -- which is what happens the year a new bottom division opens, where 128
+     group winners chase far fewer places -- nobody can be promised a place,
+     so the winners are shown as ELIGIBLE and the real decision waits for the
+     roll-over, which weighs them against each other. */
+  let slots = 0;
+  if (e.div > 0) (st.shape[e.div - 1] || []).forEach(n => { slots += n > 8 ? 4 : 2; });
+  const certain = e.div > 0 && slots >= res.length;
+  const perGroup = certain ? Math.max(1, Math.min(2, Math.floor(slots / res.length))) : 1;
   res.forEach(r => {
     if (last) r.rel = [];
-    if (e.div > 0) r.pro = (r.order || []).slice(0, Math.min(perGroup, 2));
-    else r.pro = [];                       // nothing above the top division
+    if (e.div === 0){ r.pro = []; r.elig = []; }
+    else if (certain){ r.pro = (r.order || []).slice(0, perGroup); r.elig = []; }
+    else { r.pro = []; r.elig = (r.order || []).slice(0, 1); }
   });
 
   st.divResults = st.divResults || {};
@@ -4367,16 +4385,19 @@ function soRender(step){
 function soTable(comp, only){
   const st = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
   const L = QUEUE.cur ? QUEUE.cur.live : st.val;
-  const up = new Set(), dn = new Set();
+  const up = new Set(), dn = new Set(), el = new Set();
   comp.res.forEach(r => { (r.pro || []).forEach(id => up.add(id));
+                          (r.elig || []).forEach(id => el.add(id));
                           (r.rel || []).forEach(id => dn.add(id)); });
   const cols = comp.res.map((r, gi) => {
     if (only != null && gi !== only) return '';
     const rows = (r.order || []).map((id, i) => {
       const t = TEAM[id];
       const mark = up.has(id) ? '<span class="tb-up">&#9650;</span>'
+                 : el.has(id) ? '<span class="tb-el">&#9650;?</span>'
                  : dn.has(id) ? '<span class="tb-dn">&#9660;</span>' : '';
-      return `<div class="tb-r ${up.has(id) ? 'tb-rup' : dn.has(id) ? 'tb-rdn' : ''}">
+      return `<div class="tb-r ${up.has(id) ? 'tb-rup' : el.has(id) ? 'tb-rel'
+                 : dn.has(id) ? 'tb-rdn' : ''}">
         <span class="tb-p">${i + 1}</span>
         <img src="${flag(t.iso)}" alt="" width="14" height="10">
         <span class="tb-n">${t.name}</span>
@@ -4388,16 +4409,18 @@ function soTable(comp, only){
   // when a single group is shown, count only its own movement
   if (only != null){
     const r = comp.res[only] || {};
-    up.clear(); dn.clear();
+    up.clear(); dn.clear(); el.clear();
     (r.pro || []).forEach(id => up.add(id));
+    (r.elig || []).forEach(id => el.add(id));
     (r.rel || []).forEach(id => dn.add(id));
   }
-  const n = up.size, m = dn.size;
+  const n = up.size, m = dn.size, q = el.size;
   return `<div class="tb-head">${comp.label} &mdash; final table</div>
     <div class="tb-wrap"><div class="tb">${cols}</div></div>
     <div class="tb-foot">${n ? `<span class="tb-up">&#9650; ${n} promoted</span>` : ''}
+      ${q ? `<span class="tb-el">&#9650; ${q} eligible for promotion</span>` : ''}
       ${m ? `<span class="tb-dn">&#9660; ${m} relegated</span>` : ''}
-      ${!n && !m ? 'No movement from this division' : ''}</div>`;
+      ${!n && !m && !q ? 'No movement from this division' : ''}</div>`;
 }
 
 function soSummary(){
@@ -4438,6 +4461,7 @@ function soStep(){
      first table. The division-wide card still follows the last group. */
   if (step && step.lastOfGroup) SO.pendingTable = { comp: step.comp, gi: step.item.gi };
   soRender(step);
+  try { draw(); } catch (err) {}          // the board follows the ledger
   if (!step){ SO.running = false; SO.auto = false; saveSoon(); return; }
   if (SO.auto) setTimeout(soStep, SO.speed || 220);
   else saveSoon();
@@ -4449,12 +4473,11 @@ function soStep(){
 function soSkipComp(){
   if (!QUEUE.cur) { soStep(); return; }
   // settle every remaining match so the ledger stays true if we come back
-  const L = QUEUE.cur.live;
   for (let i = QUEUE.mi; i < QUEUE.cur.flat.length; i++){
     const m = QUEUE.cur.flat[i].m;
     if (!m.take) continue;
-    L.set(m.winner, (L.get(m.winner) || 0) + m.take);
-    L.set(m.loser,  (L.get(m.loser)  || 0) - m.take);
+    VAL.set(m.winner, (VAL.get(m.winner) || 0) + m.take);
+    VAL.set(m.loser,  (VAL.get(m.loser)  || 0) - m.take);
   }
   QUEUE.mi = QUEUE.cur.flat.length;
   soStep();
