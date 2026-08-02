@@ -258,7 +258,6 @@ circle.t.hi{fill:var(--warn);opacity:1}
       <button class="btn" id="soQuit">Stop</button>
       <button class="btn" id="soSkip" title="Jump to the end of this competition">Skip this</button>
       <button class="btn" id="soReplay" hidden title="Play this same season again with the identical groups — only the results change">Replay season</button>
-      <button class="btn" id="soAuto">Play the rest</button>
       <button class="btn go" id="soNext">Continue</button>
     </div>
   </div>
@@ -4208,7 +4207,6 @@ function soRender(step){
     $('soProg').textContent = total + ' competitions played';
     $('soBody').innerHTML = '<div class="so-done">Every match has been played.</div>';
     $('soNext').textContent = 'Close';
-    $('soAuto').hidden = true;
     $('soReplay').hidden = !Object.keys(SNAP).length;
     return;
   }
@@ -4229,7 +4227,6 @@ function soRender(step){
   $('soTitle').textContent = comp.label;
   $('soProg').textContent = `Group ${item.group} \u00b7 ${roundName} \u00b7 match ${n} of ${of}` +
     `  \u2014  ${QUEUE.qi} of ${total} competitions`;
-  $('soAuto').hidden = false;
   $('soReplay').hidden = true;
   $('soNext').textContent = 'Continue';
   $('soBody').innerHTML = `<div class="so-match">
@@ -4276,7 +4273,6 @@ $('soNext').onclick = () => {
   if (SO.finished){ soShow(false); SO.finished = false; draw(); return; }
   soStep();
 };
-$('soAuto').onclick = () => { SO.auto = true; SO.speed = 40; soStep(); };
 $('soSkip').onclick = () => soSkipComp();
 $('soQuit').onclick = () => { SO.auto = false; soShow(false); draw(); };
 
