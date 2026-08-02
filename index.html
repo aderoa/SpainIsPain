@@ -3149,6 +3149,141 @@ function runGroup(st, ids, roll){
 /* ═══ state ══════════════════════════════════════════════════ */
 const ST = {};
 const S = {branch:'world', scope:null, div:0, view:'draw'};
+
+/* ── FIXTURE QUEUE ──────────────────────────────────────────────────────
+   One season is every competition played in a fixed order: the World League
+   first, then each continent alphabetically, then each country alphabetically.
+   Inside a competition the LOWEST division goes first, so promotions and
+   relegations resolve from the bottom up the way a real pyramid settles.
+
+   The queue is a flat list of {branch, scope, div} entries. `qi` is how far
+   through it we are, so the season can be walked one game at a time with the
+   user pressing Continue between each.                                     */
+const QUEUE = {list:[], qi:0, playing:false};
+
+function buildQueue(){
+  const out = [];
+  const divsFor = (branch, scope) => {
+    const k = branch + '|' + (scope || '');
+    const st = ST[k];
+    return st ? st.shape.length : 0;
+  };
+  // World League
+  for (let d = divsFor('world', null) - 1; d >= 0; d--) out.push({branch:'world', scope:null, div:d});
+  // Continents, alphabetically -- CONT_ORDER is a display order, not this one
+  const conts = [...new Set(TEAM.slice(0, LIVE).map(t => t.cont))].sort();
+  conts.forEach(c => { for (let d = divsFor('cont', c) - 1; d >= 0; d--) out.push({branch:'cont', scope:c, div:d}); });
+  // Countries, alphabetically
+  const countries = [...new Set(TEAM.slice(0, LIVE).map(t => t.country))].sort();
+  countries.forEach(c => { for (let d = divsFor('nation', c) - 1; d >= 0; d--) out.push({branch:'nation', scope:c, div:d}); });
+  QUEUE.list = out;
+  QUEUE.qi = 0;
+  return out;
+}
+
+/* Every competition the queue will touch needs a state object before it can
+   report a division count, so make sure each scope exists first. */
+function ensureAllStates(){
+  const want = [['world', null]];
+  [...new Set(TEAM.slice(0, LIVE).map(t => t.cont))].sort().forEach(c => want.push(['cont', c]));
+  [...new Set(TEAM.slice(0, LIVE).map(t => t.country))].sort().forEach(c => want.push(['nation', c]));
+  const keep = {branch:S.branch, scope:S.scope};
+  want.forEach(([b, sc]) => {
+    const k = b + '|' + (sc || '');
+    if (!ST[k]) { S.branch = b; S.scope = sc; ST[k] = fresh(); }
+  });
+  S.branch = keep.branch; S.scope = keep.scope;
+}
+
+function queueLabel(e){
+  const c = BRANCH[e.branch];
+  const where = e.scope ? e.scope : c.label;
+  return where + ' \u2014 D' + (e.div + 1);
+}
+
+/* ── SEASON RUNNER ──────────────────────────────────────────────────────
+   Walks the queue one competition at a time. Each call plays exactly one
+   division and stops, so the caller can render the result and wait for the
+   user to press Continue. The layout is remembered as each competition is
+   played, which is what makes the next season's default draw possible. */
+function stepSeason(){
+  if (!QUEUE.list.length) { ensureAllStates(); buildQueue(); }
+  if (QUEUE.qi >= QUEUE.list.length) return null;      // season complete
+
+  const e = QUEUE.list[QUEUE.qi];
+  const k = layoutKey(e.branch, e.scope);
+  const st = ST[k];
+  if (!st) { QUEUE.qi++; return stepSeason(); }         // nothing to play here
+
+  // draw this division if it has never been laid out
+  if (!st.groups[e.div] || st.groups[e.div].every(g => g.every(x => x === null))) {
+    const keep = {branch:S.branch, scope:S.scope, div:S.div};
+    S.branch = e.branch; S.scope = e.scope; S.div = e.div;
+    if (!applyLayout(e.branch, e.scope, st)) autoFillSingle(st, e.div);
+    S.branch = keep.branch; S.scope = keep.scope; S.div = keep.div;
+  }
+
+  const roll = rng(st.year * 2654435761 + 12345 + e.div * 7919);
+  const groups = st.groups[e.div] || [];
+  const res = groups.map(g => runGroup(st, g.filter(x => x !== null).sort(bySeed(st)), roll));
+
+  st.divResults = st.divResults || {};
+  st.divResults[e.div] = res;
+  rememberLayout(e.branch, e.scope, st);
+
+  QUEUE.qi++;
+  return { entry: e, label: queueLabel(e), res,
+            matches: res.reduce((n, r) => n + r.matches.length, 0),
+            remaining: QUEUE.list.length - QUEUE.qi };
+}
+
+/* ── SAVED GROUP LAYOUTS ────────────────────────────────────────────────
+   Drawing every competition by hand is impossible once the continents and
+   countries are in the queue, so each one's distribution is remembered and
+   reused as the default. A layout is stored per competition and division as
+   the list of team ids in slot order; on a new season the teams that stayed
+   put keep their slots and only the movers are redrawn.
+
+   Kept alongside the game state under the same save key, so it travels with
+   a save and survives a reload. */
+const LAYOUT = {};                       // "branch|scope" -> [div][group][ids]
+
+function layoutKey(branch, scope){ return branch + '|' + (scope || ''); }
+
+function rememberLayout(branch, scope, st){
+  if (!st || !st.groups) return;
+  LAYOUT[layoutKey(branch, scope)] = st.groups.map(gs => gs.map(g => g.slice()));
+}
+
+/* Re-apply a remembered layout to a fresh season. Teams that are no longer in
+   this competition -- promoted, relegated, retired -- leave holes, and the
+   teams that arrived fill them in seed order. Anything left over is appended,
+   so no team is ever lost even if the shape changed underneath. */
+function applyLayout(branch, scope, st){
+  const saved = LAYOUT[layoutKey(branch, scope)];
+  if (!saved) return false;
+  const here = new Set();
+  st.member.forEach((ids, d) => ids.forEach(id => here.add(id)));
+  const placed = new Set();
+  const groups = st.groups.map((gs, d) => gs.map((g, gi) => {
+    const prev = (saved[d] && saved[d][gi]) || [];
+    return g.map((_, si) => {
+      const id = prev[si];
+      if (id != null && here.has(id) && !placed.has(id)) { placed.add(id); return id; }
+      return null;
+    });
+  }));
+  // whoever is left, by seed, into whatever holes remain
+  const spare = [...here].filter(id => !placed.has(id))
+                  .sort((a, b) => (st.seed.get(a) || 0) - (st.seed.get(b) || 0));
+  let si = 0;
+  for (let d = 0; d < groups.length && si < spare.length; d++)
+    for (let g = 0; g < groups[d].length && si < spare.length; g++)
+      for (let k = 0; k < groups[d][g].length && si < spare.length; k++)
+        if (groups[d][g][k] === null) groups[d][g][k] = spare[si++];
+  st.groups = groups;
+  return true;
+}
 const key = () => S.branch + '|' + (S.scope || '');
 const inScope = (id, c, scope) =>
   !c.scope || (c.scope === 'cont' ? TEAM[id].cont : TEAM[id].country) === scope;
@@ -3388,7 +3523,8 @@ const packRank = m => [...m].map(([id, r]) => [id, r.d, r.p]);
 const unpackRank = a => new Map(a.map(([id, d, p]) => [id, {d, p}]));
 
 function encode(withResults){
-  const out = {live: LIVE, ui: {branch: S.branch, scope: S.scope, div: S.div}, st: {}};
+  const out = {live: LIVE, ui: {branch: S.branch, scope: S.scope, div: S.div},
+               layout: LAYOUT, queue: {qi: QUEUE.qi}, st: {}};
   Object.entries(ST).forEach(([k, st]) => {
     out.st[k] = {
       shape: st.shape, salt: st.salt, year: st.year, member: st.member, groups: st.groups,
@@ -3409,6 +3545,9 @@ function encode(withResults){
 function decode(json){
   const o = JSON.parse(json);
   LIVE = o.live;
+  Object.keys(LAYOUT).forEach(k => delete LAYOUT[k]);
+  if (o.layout) Object.assign(LAYOUT, o.layout);
+  if (o.queue) QUEUE.qi = o.queue.qi || 0;
   Object.keys(ST).forEach(k => delete ST[k]);
   Object.entries(o.st).forEach(([k, d]) => {
     const st = {shape: d.shape, salt: d.salt || Math.floor(Math.random() * 1e9),
