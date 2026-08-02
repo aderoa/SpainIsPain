@@ -3260,6 +3260,31 @@ const QUEUE = {list:[], qi:0, playing:false, replay:0,
 const VAL = new Map();
 function seedVal(){ TEAM.forEach(t => { if (!VAL.has(t.id)) VAL.set(t.id, t.val); }); }
 
+/* ── HISTORY ────────────────────────────────────────────────────────────
+   One compact row per tournament: year, where it was, who won, who came
+   second and third, and who went up or down. Match-by-match logs are NOT
+   kept -- a single season is over seven thousand games, and storing them all
+   is what pushed the save past its quota. A row is about forty bytes, so a
+   full season of 325 tournaments costs ~13 KB and twenty seasons still fits
+   comfortably. Stored under its own key: if history ever grows too large it
+   is trimmed on its own without touching the game state. */
+const HIST_KEY = 'worldleague.hist.v1';
+const HIST_MAX = 8000;
+let HIST = [];
+
+function recordTournament(entry, res, st){
+  res.forEach((r, gi) => {
+    const o = r.order || [];
+    if (!o.length) return;
+    HIST.push({ y: st.year, b: entry.branch, s: entry.scope || '', d: entry.div,
+                g: res.length > 1 ? gi : -1,
+                w: o[0], r2: o[1] != null ? o[1] : -1, r3: o[2] != null ? o[2] : -1,
+                up: (r.pro || []).slice(), dn: (r.rel || []).slice(),
+                m: (r.matches || []).length });
+  });
+  if (HIST.length > HIST_MAX) HIST = HIST.slice(-HIST_MAX);
+}
+
 const SNAP = {};
 
 function snapshotSeason(){
@@ -3413,6 +3438,7 @@ function stepSeason(){
 
   st.divResults = st.divResults || {};
   st.divResults[e.div] = res;
+  recordTournament(e, res, st);
   rememberLayout(e.branch, e.scope, st);
 
   QUEUE.qi++;
@@ -3714,7 +3740,11 @@ function encode(withResults){
   Object.entries(ST).forEach(([k, st]) => {
     out.st[k] = {
       shape: st.shape, salt: st.salt, year: st.year, member: st.member, groups: st.groups,
-      free: st.free, seed: [...st.seed], val: [...st.val],
+      /* `val` is the SHARED ledger now, so writing it per competition wrote
+         the same 2,000 entries 325 times -- six megabytes against a five
+         megabyte quota, which is why every save failed. It goes out once,
+         at the top level, as `o.val`. */
+      free: st.free, seed: [...st.seed],
       rank: packRank(st.rank), delta: [...st.delta],
       result: (withResults && st.result) ? {
         year: st.result.year, up: st.result.up, down: st.result.down,
@@ -3778,18 +3808,31 @@ let saveTimer = null;
 function saveSoon(){ clearTimeout(saveTimer); saveTimer = setTimeout(save, 600); }
 async function save(){
   const stamp = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-  try {
-    await Store.set(SAVE_KEY, encode(true));
-    $('saveState').innerHTML = `saved <b>${stamp}</b>`;
-  } catch (e) {
-    try {                                  // too big — drop the match logs
-      await Store.set(SAVE_KEY, encode(false));
-      $('saveState').innerHTML = `saved <b>${stamp}</b>*`;
-    } catch (e2) {
-      $('saveState').textContent = 'not saved';
-      console.warn('save failed', e2);
-    }
+
+  // history first, in its own key, trimmed if it will not fit
+  try { await Store.set(HIST_KEY, JSON.stringify(HIST)); }
+  catch (e) {
+    try { HIST = HIST.slice(-2000); await Store.set(HIST_KEY, JSON.stringify(HIST)); }
+    catch (e2) { console.warn('history not saved', e2); }
   }
+
+  /* The game state, shedding weight until it fits. Match logs are the bulk of
+     it -- 7,000 a season -- so they go first; the season snapshot used for
+     Replay is next; what is left is the structure the game cannot run without. */
+  const attempts = [
+    () => encode(true),
+    () => encode(false),
+    () => { const j = JSON.parse(encode(false)); delete j.snap; return JSON.stringify(j); },
+    () => { const j = JSON.parse(encode(false)); delete j.snap; delete j.layout; return JSON.stringify(j); },
+  ];
+  for (let i = 0; i < attempts.length; i++){
+    try {
+      await Store.set(SAVE_KEY, attempts[i]());
+      $('saveState').innerHTML = `saved <b>${stamp}</b>${i ? '*' : ''}`;
+      return;
+    } catch (e) { /* try a lighter one */ }
+  }
+  $('saveState').textContent = 'not saved';
 }
 
 /* ═══ render ═════════════════════════════════════════════════ */
@@ -4432,6 +4475,7 @@ $('find').oninput = e => {
 };
 
 (async () => {
+  try { const h = await Store.get(HIST_KEY); if (h) HIST = JSON.parse(h) || []; } catch (e) { HIST = []; }
   const raw = await Store.get(SAVE_KEY);
   if (raw){
     try { decode(raw); }
