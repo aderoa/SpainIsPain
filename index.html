@@ -3341,12 +3341,18 @@ function stepMatch(){
     const flat = [];
     comp.res.forEach((r, gi) => (r.matches || []).forEach((m, k) =>
       flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r })));
-    QUEUE.cur = { comp, flat };
+    QUEUE.cur = { comp, flat, live: new Map(comp.val0) };
     QUEUE.mi = 0;
     if (!flat.length) continue;                          // a group of one: skip on
   }
   const item = QUEUE.cur.flat[QUEUE.mi++];
-  return { comp: QUEUE.cur.comp, item,
+  // settle this match's money in the running ledger
+  if (item.m.take){
+    const L = QUEUE.cur.live;
+    L.set(item.m.winner, (L.get(item.m.winner) || 0) + item.m.take);
+    L.set(item.m.loser,  (L.get(item.m.loser)  || 0) - item.m.take);
+  }
+  return { comp: QUEUE.cur.comp, item, live: QUEUE.cur.live,
            n: QUEUE.mi, of: QUEUE.cur.flat.length,
            lastOfComp: QUEUE.mi >= QUEUE.cur.flat.length };
 }
@@ -3375,6 +3381,12 @@ function stepSeason(){
     S.branch = keep.branch; S.scope = keep.scope; S.div = keep.div;
   }
 
+  /* runGroup resolves the whole bracket in one go, so by the time match 1 is
+     shown st.val already holds the END-of-division figures. Keep the values as
+     they stood before a ball was kicked; the viewer then replays the takes one
+     match at a time and shows the true running total. */
+  const val0 = new Map(st.val);
+
   // a layout can leave arrivals unplaced if the shape grew; seed the remainder
   if ((st.free[e.div] || []).length){
     if (st.shape[e.div].length === 1) autoFillSingle(st, e.div);
@@ -3390,7 +3402,7 @@ function stepSeason(){
   rememberLayout(e.branch, e.scope, st);
 
   QUEUE.qi++;
-  return { entry: e, label: queueLabel(e), res,
+  return { entry: e, label: queueLabel(e), res, val0,
             matches: res.reduce((n, r) => n + r.matches.length, 0),
             remaining: QUEUE.list.length - QUEUE.qi };
 }
@@ -4136,7 +4148,7 @@ function soShow(on){ $('seasonOverlay').hidden = !on; }
    Only the main bracket is drawn -- the relegation mini-rounds and the bronze
    game are listed underneath rather than forced into the tree, because they
    do not share its shape. */
-function soBracket(item, st){
+function soBracket(item, L){
   const all = item.res.matches || [];
   const upto = item.k;                                    // matches already shown
   const main = all.filter(m => typeof m.round === 'number');
@@ -4166,7 +4178,7 @@ function soBracket(item, st){
     const one = (id, isWin) => {
       if (!seen(m, id)) return '<div class="bk-t bk-tbd">&mdash;</div>';
       const t = TEAM[id];
-      const v = st && st.val.get(id);
+      const v = L && L.get(id);
       return `<div class="bk-t ${played ? (isWin ? 'bk-win' : 'bk-lose') : 'bk-wait'}">
         <img src="${flag(t.iso)}" alt="" width="14" height="10">
         <span>${t.name}</span>
@@ -4191,7 +4203,7 @@ function soBracket(item, st){
       <div class="bk-m bk-champ"><div class="bk-t bk-win">
         <img src="${flag(TEAM[finalM.winner].iso)}" alt="" width="14" height="10">
         <span>${TEAM[finalM.winner].name}</span>
-        <i class="bk-v">${num(Math.round(st.val.get(finalM.winner)))}</i></div></div></div>` : '';
+        <i class="bk-v">${num(Math.round(L.get(finalM.winner)))}</i></div></div></div>` : '';
 
   const side = all.filter(m => typeof m.round === 'string' && all.indexOf(m) <= upto);
   const extra = side.length ? `<div class="bk-side">${side.map(m =>
@@ -4217,12 +4229,12 @@ function soRender(step){
   const { comp, item, n, of } = step;
   const m = item.m;
   const A = TEAM[m.a], B = TEAM[m.b];
-  const st = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
+  const L = step.live;
   const wid = m.winner, lid = m.loser;
   const side = (t, id) => `<div class="so-team ${id === wid ? 'win' : 'lose'}">
       <img src="${flag(t.iso)}" alt="" width="20" height="14">
       <span class="so-name">${t.name}</span>
-      <span class="so-val">${num(Math.round(st.val.get(id)))}</span>
+      <span class="so-val">${num(Math.round(L.get(id)))}</span>
     </div>`;
   const roundName = m.round === 'bronze' ? 'Third place'
                   : (typeof m.round === 'string' ? m.round : 'Round ' + m.round);
@@ -4240,7 +4252,7 @@ function soRender(step){
     <div class="so-take">${m.take
       ? TEAM[wid].name + ' takes ' + num(m.take)
       : 'No value changes hands'}</div>
-    ${soBracket(item, st)}`;
+    ${soBracket(item, L)}`;
 }
 
 function soStep(){
@@ -4256,6 +4268,14 @@ function soStep(){
    rather than an obligation. */
 function soSkipComp(){
   if (!QUEUE.cur) { soStep(); return; }
+  // settle every remaining match so the ledger stays true if we come back
+  const L = QUEUE.cur.live;
+  for (let i = QUEUE.mi; i < QUEUE.cur.flat.length; i++){
+    const m = QUEUE.cur.flat[i].m;
+    if (!m.take) continue;
+    L.set(m.winner, (L.get(m.winner) || 0) + m.take);
+    L.set(m.loser,  (L.get(m.loser)  || 0) - m.take);
+  }
   QUEUE.mi = QUEUE.cur.flat.length;
   soStep();
 }
