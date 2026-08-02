@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
+<!-- build 2026-08-02 · bracket preview + palmarès -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -229,6 +230,35 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .sm-r{border-bottom:1px solid rgba(0,0,0,.05)}
 .sm-k{font-weight:600}.sm-u{color:#0a7}.sm-d{color:#c33}
 .sm-wrap{max-height:46vh;overflow:auto}
+
+/* preview: the bracket as it stands before the opening tie is played */
+.so-team.pv{opacity:.9}
+.so-pv{text-align:center;font-size:12px;color:var(--dim,#6b7783);padding-bottom:4px;
+  letter-spacing:.02em}
+
+#palOverlay{position:fixed;inset:0;z-index:210;background:rgba(12,16,20,.72);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+#palOverlay[hidden]{display:none}
+.pal-divs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px 0}
+.pal-sec{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim,#8a949e);
+  margin:2px 0 6px}
+.pal-hs+.pal-sec{margin-top:14px}
+.pal-hs{display:flex;flex-wrap:wrap;gap:6px 16px;padding-bottom:2px}
+.pal-h{display:flex;align-items:center;gap:6px;font-size:12px}
+.pal-n{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent,#0a7);
+  min-width:14px;text-align:right}
+.pal-h5,.pal-r{display:grid;grid-template-columns:60px 72px 1fr 1fr 1fr;gap:8px;
+  align-items:center;font-size:11.5px;padding:3px 0}
+.pal-h5{font-weight:650;border-bottom:1px solid rgba(0,0,0,.12);margin-bottom:4px;
+  color:var(--dim,#6b7783)}
+.pal-r{border-bottom:1px solid rgba(0,0,0,.05)}
+.pal-r:hover{background:rgba(0,0,0,.03)}
+.pal-y{font-weight:650;font-variant-numeric:tabular-nums}
+.pal-g{color:var(--dim,#8a949e)}
+.pal-t{display:flex;align-items:center;gap:5px;min-width:0}
+.pal-t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal-tbd{color:var(--dim,#aab2ba)}
+.pal-wrap{max-height:50vh;overflow:auto}
 </style>
 </head>
 <body>
@@ -243,6 +273,7 @@ circle.t.hi{fill:var(--warn);opacity:1}
     <div class="ctl"><span class="saved" id="saveState"></span>
       <button class="btn" id="replaySeason" title="Play this season again from the beginning with the groups exactly as they are">Replay season</button>
       <button class="btn" id="restartComp" title="Start this competition again from year 1, keeping every other competition as it is">Restart this</button>
+      <button class="btn" id="palBtn" title="Every winner, runner-up and third place this competition has had">Palmarès</button>
       <button class="btn" id="reset">Reset all</button></div>
   </div>
   <div class="bar">
@@ -276,6 +307,20 @@ circle.t.hi{fill:var(--warn);opacity:1}
       <button class="btn" id="soSkip" title="Jump to the end of this competition">Skip this</button>
       <button class="btn" id="soReplay" hidden title="Play this same season again with the identical groups — only the results change">Replay season</button>
       <button class="btn go" id="soNext">Continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="palOverlay" hidden>
+  <div class="so-box">
+    <div class="so-head">
+      <div class="so-title" id="palTitle">Palmarès</div>
+      <div class="so-prog" id="palProg"></div>
+    </div>
+    <div class="pal-divs" id="palDivs"></div>
+    <div class="so-body" id="palBody"></div>
+    <div class="so-foot">
+      <button class="btn go" id="palClose">Close</button>
     </div>
   </div>
 </div>
@@ -3399,7 +3444,7 @@ function queueLabel(e){
    the true sequence, just revealed at the pace of a button rather than all at
    once. `stepMatch` returns the next match anywhere in the season, rolling
    into the next competition when the current one runs out. */
-function stepMatch(){
+function stepMatch(peek){
   // need a competition loaded?
   while (!QUEUE.cur || QUEUE.mi >= QUEUE.cur.flat.length){
     const comp = stepSeason();
@@ -3429,6 +3474,16 @@ function stepMatch(){
       QUEUE.resumeAt = 0;
     }
     if (!flat.length) continue;                          // a group of one: skip on
+  }
+  /* A PEEK hands back the match that is ABOUT to be played: the cursor does
+     not move and no money changes hands. Loading a competition is still
+     allowed to happen above -- that is what resolves the draw, and the draw is
+     precisely what the preview needs to show. */
+  if (peek){
+    return { comp: QUEUE.cur.comp, item: QUEUE.cur.flat[QUEUE.mi],
+             live: QUEUE.cur.live, preview: true,
+             n: QUEUE.mi + 1, of: QUEUE.cur.flat.length,
+             lastOfGroup: false, lastOfComp: false };
   }
   const item = QUEUE.cur.flat[QUEUE.mi++];
   // settle this match's money in the running ledger
@@ -4307,9 +4362,13 @@ function soShow(on){ $('seasonOverlay').hidden = !on; }
    Only the main bracket is drawn -- the relegation mini-rounds and the bronze
    game are listed underneath rather than forced into the tree, because they
    do not share its shape. */
-function soBracket(item, L){
+function soBracket(item, L, preview){
   const all = item.res.matches || [];
-  const upto = item.k;                                    // matches already shown
+  /* In preview NOTHING has been played. The match on screen is the one about
+     to happen, so it is outlined but left blank; everything behind it is
+     already resolved as usual. */
+  const upto = preview ? item.k - 1 : item.k;             // matches already shown
+  const liveAt = item.k;                                  // the match on screen
   const main = all.filter(m => typeof m.round === 'number');
   if (!main.length) return '';
 
@@ -4333,7 +4392,7 @@ function soBracket(item, L){
   const cell = (m) => {
     const idx = all.indexOf(m);
     const played = idx <= upto;
-    const live = idx === upto;
+    const live = idx === liveAt;
     const one = (id, isWin) => {
       if (!seen(m, id)) return '<div class="bk-t bk-tbd">&mdash;</div>';
       const t = TEAM[id];
@@ -4362,7 +4421,7 @@ function soBracket(item, L){
       <div class="bk-m bk-champ"><div class="bk-t bk-win">
         <img src="${flag(TEAM[finalM.winner].iso)}" alt="" width="14" height="10">
         <span>${TEAM[finalM.winner].name}</span>
-        <i class="bk-v">${num(Math.round(L.get(finalM.winner)))}</i></div></div></div>` : '';
+        <i class="bk-v">${num(Math.round(L.get(finalM.winner) || 0))}</i></div></div></div>` : '';
 
   const side = all.filter(m => typeof m.round === 'string' && all.indexOf(m) <= upto);
   const extra = side.length ? `<div class="bk-side">${side.map(m =>
@@ -4386,11 +4445,12 @@ function soRender(step){
   }
 
   const { comp, item, n, of } = step;
+  const pv = !!step.preview;
   const m = item.m;
   const A = TEAM[m.a], B = TEAM[m.b];
   const L = step.live;
   const wid = m.winner, lid = m.loser;
-  const side = (t, id) => `<div class="so-team ${id === wid ? 'win' : 'lose'}">
+  const side = (t, id) => `<div class="so-team ${pv ? 'pv' : (id === wid ? 'win' : 'lose')}">
       <img src="${flag(t.iso)}" alt="" width="20" height="14">
       <span class="so-name">${t.name}</span>
       <span class="so-val">${num(Math.round(L.get(id)))}</span>
@@ -4398,20 +4458,25 @@ function soRender(step){
   const roundName = m.round === 'bronze' ? 'Third place'
                   : (typeof m.round === 'string' ? m.round : 'Round ' + m.round);
 
+  const inGroup = (item.res.matches || []).length;
   $('soTitle').textContent = comp.label;
-  $('soProg').textContent = `Group ${item.group} \u00b7 ${roundName} \u00b7 match ${n} of ${of}` +
+  $('soProg').textContent = (pv
+      ? `Group ${item.group} \u00b7 the draw \u00b7 ${inGroup} match${inGroup === 1 ? '' : 'es'} to play`
+      : `Group ${item.group} \u00b7 ${roundName} \u00b7 match ${n} of ${of}`) +
     `  \u2014  ${QUEUE.qi} of ${total} competitions`;
   $('soReplay').hidden = true;
-  $('soNext').textContent = 'Continue';
+  $('soNext').textContent = pv ? 'Kick off' : 'Continue';
   $('soBody').innerHTML = `<div class="so-match">
       ${side(A, m.a)}
       <div class="so-vs">v</div>
       ${side(B, m.b)}
     </div>
-    <div class="so-take">${m.take
-      ? TEAM[wid].name + ' takes ' + num(m.take)
-      : 'No value changes hands'}</div>
-    ${soBracket(item, L)}`;
+    ${pv
+      ? '<div class="so-pv">First up. Nothing has been played yet.</div>'
+      : `<div class="so-take">${m.take
+          ? TEAM[wid].name + ' takes ' + num(m.take)
+          : 'No value changes hands'}</div>`}
+    ${soBracket(item, L, pv)}`;
 }
 
 function soTable(comp, only){
@@ -4472,6 +4537,81 @@ function soSummary(){
     <div class="sm-wrap">${rows || '<div class="so-done">Nothing moved.</div>'}</div>`;
 }
 
+/* ── PALMARÈS ──────────────────────────────────────────────────
+   Every tournament already writes one row to HIST -- year, branch, scope,
+   division, group and the podium. Nothing extra is recorded here: this is a
+   READING of what is stored, filtered to the competition on screen. */
+const PAL = {div:0};
+
+function palTeam(id){
+  const t = (id == null || id < 0) ? null : TEAM[id];
+  if (!t) return '<span class="pal-tbd">\u2014</span>';
+  return `<span class="pal-t"><img src="${flag(t.iso)}" alt="" width="14" height="10"><b>${t.name}</b></span>`;
+}
+
+function palRender(){
+  const st = ST[key()];
+  const divs = st ? st.shape.length : 1;
+  if (PAL.div >= divs) PAL.div = 0;
+  const rows = HIST.filter(h => h.b === S.branch && h.s === (S.scope || '') && h.d === PAL.div);
+
+  $('palTitle').textContent = BRANCH[S.branch].label +
+    (S.scope ? ' \u00b7 ' + S.scope : '') + ' \u00b7 D' + (PAL.div + 1);
+  $('palProg').textContent = rows.length
+    ? rows.length + ' tournament' + (rows.length === 1 ? '' : 's') + ' on record'
+    : 'Nothing played in this division yet';
+
+  $('palDivs').innerHTML = Array.from({length: divs}, (_, i) =>
+    `<button class="btn${i === PAL.div ? ' go' : ''}" data-pd="${i}">D${i + 1}</button>`).join('');
+
+  if (!rows.length){
+    $('palBody').innerHTML =
+      '<div class="so-done">No season of this division has been played.</div>';
+    return;
+  }
+
+  /* Roll of honour: a group win is a win, so a division with many groups
+     produces many champions in the same year. That is the truth of the format
+     rather than a fault -- each group is its own tournament. */
+  const wins = new Map();
+  rows.forEach(h => wins.set(h.w, (wins.get(h.w) || 0) + 1));
+  const ranked = [...wins]
+    .sort((a, b) => b[1] - a[1] ||
+                    (TEAM[a[0]] ? TEAM[a[0]].name : '').localeCompare(TEAM[b[0]] ? TEAM[b[0]].name : ''));
+  /* D8 has 128 groups, so a single season leaves 128 champions on one title
+     each -- a list that long says nothing. Show the repeat winners, and once
+     there are none left worth naming, say how many shared the rest. */
+  const PAL_MAX = 24;
+  const shown = ranked.length > PAL_MAX
+    ? (ranked.filter(x => x[1] > 1).slice(0, PAL_MAX).length
+        ? ranked.filter(x => x[1] > 1).slice(0, PAL_MAX)
+        : ranked.slice(0, PAL_MAX))
+    : ranked;
+  const rest = ranked.length - shown.length;
+  const honour = shown
+    .map(([id, n]) => `<div class="pal-h"><span class="pal-n">${n}</span>${palTeam(id)}</div>`)
+    .join('') + (rest > 0
+      ? `<div class="pal-h pal-tbd">+${rest} other${rest === 1 ? '' : 's'}</div>` : '');
+
+  const byYear = new Map();
+  rows.forEach(h => { if (!byYear.has(h.y)) byYear.set(h.y, []); byYear.get(h.y).push(h); });
+  const body = [...byYear.keys()].sort((a, b) => b - a).map(y =>
+    byYear.get(y).slice().sort((a, b) => a.g - b.g).map((h, i) => `<div class="pal-r">
+        <span class="pal-y">${i ? '' : 'Year ' + y}</span>
+        <span class="pal-g">${h.g < 0 ? '' : 'Group ' + gLabel(h.g)}</span>
+        <span>${palTeam(h.w)}</span>
+        <span>${palTeam(h.r2)}</span>
+        <span>${palTeam(h.r3)}</span>
+      </div>`).join('')).join('');
+
+  $('palBody').innerHTML =
+    `<div class="pal-sec">Roll of honour</div><div class="pal-hs">${honour}</div>
+     <div class="pal-sec">Year by year</div>
+     <div class="pal-h5"><span class="pal-y">Year</span><span class="pal-g">Group</span>
+       <span>Winner</span><span>Runner-up</span><span>Third</span></div>
+     <div class="pal-wrap">${body}</div>`;
+}
+
 function soStep(){
   /* The last match of a competition has been watched -- show its final table
      before the queue rolls on, so promotion and relegation are read where they
@@ -4486,6 +4626,30 @@ function soStep(){
     $('soNext').textContent = 'Continue';
     $('soReplay').hidden = true;
     return;
+  }
+  /* The bracket used to arrive with its opening tie already decided, because
+     the first thing the panel ever showed was a played match. Peek at the game
+     about to happen: if it is the first of its group, show the empty bracket
+     and let the next press start it. One preview per group, remembered by
+     competition + group so Continue cannot loop on it. Auto-play skips this --
+     "play the rest" is not asking to be stopped. */
+  if (!SO.auto){
+    const peek = stepMatch(true);
+    if (!peek){                                  // season finished on the peek
+      soRender(null);
+      try { draw(); } catch (err) {}
+      SO.running = false; SO.auto = false; saveSoon(); return;
+    }
+    const mark = QUEUE.qi + '|' + peek.item.gi;
+    const firstOfGroup = QUEUE.mi === 0 ||
+                         QUEUE.cur.flat[QUEUE.mi - 1].gi !== peek.item.gi;
+    if (firstOfGroup && SO.shown !== mark){
+      SO.shown = mark;
+      soRender(peek);
+      try { draw(); } catch (err) {}
+      saveSoon();
+      return;
+    }
   }
   const step = stepMatch();
   /* A recap after every GROUP, not only at the end of the division -- D8 has
@@ -4538,6 +4702,7 @@ $('worldSeason').onclick = () => {
     buildQueue();                              // the season is over: start again
   }
   if (QUEUE.qi === 0) snapshotSeason();       // a fresh season -- remember where it started
+  SO.shown = null;                            // previews are per visit
   SO.running = true; SO.auto = false; SO.finished = false;
   soShow(true);
   soStep();
@@ -4551,13 +4716,20 @@ $('soNext').onclick = () => {
   soStep();
 };
 $('soSkip').onclick = () => soSkipComp();
+
+$('palBtn').onclick = () => { PAL.div = S.div; $('palOverlay').hidden = false; palRender(); };
+$('palClose').onclick = () => { $('palOverlay').hidden = true; };
+$('palDivs').onclick = e => {
+  const b = e.target.closest('[data-pd]'); if (!b) return;
+  PAL.div = +b.dataset.pd; palRender();
+};
 $('soQuit').onclick = () => { SO.auto = false; soShow(false); draw(); save(); };
 
 /* Replay: same groups, same teams, same values as at kick-off -- different
    results, because the roll is seeded with a replay counter. */
 $('soReplay').onclick = () => {
   if (!restoreSeason()){ alert('No season snapshot to replay from.'); return; }
-  SO.finished = false; SO.auto = false; SO.pendingTable = null;
+  SO.finished = false; SO.auto = false; SO.pendingTable = null; SO.shown = null;
   soStep();
   saveSoon();
 };
