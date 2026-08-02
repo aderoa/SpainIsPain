@@ -3460,6 +3460,22 @@ function stepSeason(){
   const groups = st.groups[e.div] || [];
   const res = groups.map(g => runGroup(st, g.filter(x => x !== null).sort(bySeed(st)), roll));
 
+  /* runGroup leaves `pro` empty -- promotion is a division-wide decision made
+     at roll-over, not something a single group can settle. Fill it in here so
+     the table can show it, and clear `rel` in the bottom division, which has
+     nowhere to send anyone.
+
+     Who goes up: the group winner, plus the runner-up where the division
+     above needs two per group to balance what it relegates. */
+  const last = e.div === st.shape.length - 1;
+  const above = e.div > 0 ? st.shape[e.div - 1].length : 0;
+  const perGroup = (above && res.length) ? Math.max(1, Math.round(above * 2 / res.length)) : 1;
+  res.forEach(r => {
+    if (last) r.rel = [];
+    if (e.div > 0) r.pro = (r.order || []).slice(0, Math.min(perGroup, 2));
+    else r.pro = [];                       // nothing above the top division
+  });
+
   st.divResults = st.divResults || {};
   st.divResults[e.div] = res;
   recordTournament(e, res, st);
