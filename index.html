@@ -167,7 +167,8 @@ circle.t.hi{fill:var(--warn);opacity:1}
     <div class="spacer"></div>
     <div class="ctl"><input type="search" id="find" placeholder="Find a team" style="width:150px"></div>
     <div class="ctl"><span class="saved" id="saveState"></span>
-      <button class="btn" id="reset">Reset</button></div>
+      <button class="btn" id="restartComp" title="Start this competition again from year 1, keeping every other competition as it is">Restart this</button>
+      <button class="btn" id="reset">Reset all</button></div>
   </div>
   <div class="bar">
     <div class="tabs" id="divs" role="tablist"></div>
@@ -4004,6 +4005,25 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   if (e.target.dataset.mv) move(+e.target.dataset.mv, +e.target.value);
 });
+/* Restart ONE competition. `reset` wipes the whole save; this rebuilds just
+   the branch/scope currently on screen -- fresh draw, year 1, values back to
+   each team's starting worth -- and leaves every other competition untouched.
+   The remembered layout for it goes too, so the next draw is genuinely new
+   rather than the old one reapplied. */
+$('restartComp').onclick = () => {
+  const c = BRANCH[S.branch];
+  const name = S.scope ? S.scope : c.label;
+  if (!confirm('Restart ' + name + ' from year 1?\n\n' +
+               'Its groups, results and team values are cleared. Every other competition is left alone.')) return;
+  const k = key();
+  delete LAYOUT[layoutKey(S.branch, S.scope)];
+  ST[k] = fresh();
+  QUEUE.list = [];                       // rebuilt on the next step
+  S.div = 0;
+  draw();
+  saveSoon();
+};
+
 $('reset').onclick = async () => {
   if (!confirm('Delete the saved game and start over from year 1?')) return;
   clearTimeout(saveTimer);
