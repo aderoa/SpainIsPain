@@ -175,6 +175,18 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .so-up{color:#0a7;font-weight:600}
 .so-dn{color:#c33;font-weight:600}
 .so-done{text-align:center;padding:20px 0;font-size:15px;font-weight:600}
+
+.so-match{display:flex;align-items:center;gap:14px;justify-content:center;padding:10px 0 6px}
+.so-team{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:9px 12px;
+  border:1px solid var(--line,#dfe4e9);border-radius:9px;background:rgba(0,0,0,.02)}
+.so-team.win{border-color:#0a7;background:rgba(0,170,119,.09);font-weight:600}
+.so-team.lose{opacity:.62}
+.so-team:first-child{justify-content:flex-end;text-align:right}
+.so-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.so-team:first-child .so-name{text-align:right}
+.so-val{font-variant-numeric:tabular-nums;font-size:12px;color:var(--dim,#6b7783)}
+.so-vs{font-size:12px;color:var(--dim,#8a949e);flex:0 0 auto}
+.so-take{text-align:center;font-size:12px;color:var(--dim,#6b7783);padding-bottom:4px}
 </style>
 </head>
 <body>
@@ -219,6 +231,7 @@ circle.t.hi{fill:var(--warn);opacity:1}
     <div class="so-body" id="soBody"></div>
     <div class="so-foot">
       <button class="btn" id="soQuit">Stop</button>
+      <button class="btn" id="soSkip" title="Jump to the end of this competition">Skip this</button>
       <button class="btn" id="soReplay" hidden title="Play this same season again with the identical groups — only the results change">Replay season</button>
       <button class="btn" id="soAuto">Play the rest</button>
       <button class="btn go" id="soNext">Continue</button>
@@ -3199,7 +3212,8 @@ const S = {branch:'world', scope:null, div:0, view:'draw'};
    The queue is a flat list of {branch, scope, div} entries. `qi` is how far
    through it we are, so the season can be walked one game at a time with the
    user pressing Continue between each.                                     */
-const QUEUE = {list:[], qi:0, playing:false, replay:0};
+const QUEUE = {list:[], qi:0, playing:false, replay:0,
+               cur:null, mi:0};       // the competition being watched, and how far into it
 
 /* ── SEASON SNAPSHOT ────────────────────────────────────────────────────
    Playing a season MOVES money: a winner takes 10% of the loser's value, so
@@ -3237,7 +3251,7 @@ function restoreSeason(){
     st.divResults = {};
     // st.groups is left exactly as it is -- that is the point
   });
-  QUEUE.qi = 0;
+  QUEUE.qi = 0; QUEUE.cur = null; QUEUE.mi = 0;
   QUEUE.replay++;                 // so the same fixtures roll differently
   return true;
 }
@@ -3258,7 +3272,7 @@ function buildQueue(){
   const countries = [...new Set(TEAM.slice(0, LIVE).map(t => t.country))].sort();
   countries.forEach(c => { for (let d = divsFor('nation', c) - 1; d >= 0; d--) out.push({branch:'nation', scope:c, div:d}); });
   QUEUE.list = out;
-  QUEUE.qi = 0;
+  QUEUE.qi = 0; QUEUE.cur = null; QUEUE.mi = 0;
   return out;
 }
 
@@ -3287,6 +3301,32 @@ function queueLabel(e){
    division and stops, so the caller can render the result and wait for the
    user to press Continue. The layout is remembered as each competition is
    played, which is what makes the next season's default draw possible. */
+/* ── ONE MATCH AT A TIME ────────────────────────────────────────────────
+   A division is computed in full -- the bracket has to resolve as a unit,
+   and every match already mutates values in order inside runGroup -- and then
+   its matches are handed out one by one. What the viewer sees is therefore
+   the true sequence, just revealed at the pace of a button rather than all at
+   once. `stepMatch` returns the next match anywhere in the season, rolling
+   into the next competition when the current one runs out. */
+function stepMatch(){
+  // need a competition loaded?
+  while (!QUEUE.cur || QUEUE.mi >= QUEUE.cur.flat.length){
+    const comp = stepSeason();
+    if (!comp) { QUEUE.cur = null; return null; }        // season complete
+    // flatten every group's matches, group by group
+    const flat = [];
+    comp.res.forEach((r, gi) => (r.matches || []).forEach(m =>
+      flat.push({ m, gi, group: String.fromCharCode(65 + gi) })));
+    QUEUE.cur = { comp, flat };
+    QUEUE.mi = 0;
+    if (!flat.length) continue;                          // a group of one: skip on
+  }
+  const item = QUEUE.cur.flat[QUEUE.mi++];
+  return { comp: QUEUE.cur.comp, item,
+           n: QUEUE.mi, of: QUEUE.cur.flat.length,
+           lastOfComp: QUEUE.mi >= QUEUE.cur.flat.length };
+}
+
 function stepSeason(){
   if (!QUEUE.list.length) { ensureAllStates(); buildQueue(); }
   if (QUEUE.qi >= QUEUE.list.length) return null;      // season complete
@@ -3300,10 +3340,22 @@ function stepSeason(){
   if (!st.groups[e.div] || st.groups[e.div].every(g => g.every(x => x === null))) {
     const keep = {branch:S.branch, scope:S.scope, div:S.div};
     S.branch = e.branch; S.scope = e.scope; S.div = e.div;
-    if (!applyLayout(e.branch, e.scope, st)) autoFillSingle(st, e.div);
+    /* autoFillSingle only handles a one-group division and bails on anything
+       wider, so D2 downward stayed empty and produced no matches at all --
+       every team sat in `free`. Seed them instead, which is the same draw the
+       "Seed by strength" button performs. */
+    if (!applyLayout(e.branch, e.scope, st)){
+      if (st.shape[e.div].length === 1) autoFillSingle(st, e.div);
+      else assignSnake(st, e.div);
+    }
     S.branch = keep.branch; S.scope = keep.scope; S.div = keep.div;
   }
 
+  // a layout can leave arrivals unplaced if the shape grew; seed the remainder
+  if ((st.free[e.div] || []).length){
+    if (st.shape[e.div].length === 1) autoFillSingle(st, e.div);
+    else assignSnake(st, e.div);
+  }
   const roll = rng(st.year * 2654435761 + 12345 + e.div * 7919
                    + QUEUE.replay * 1013904223);
   const groups = st.groups[e.div] || [];
@@ -4053,42 +4105,63 @@ function soShow(on){ $('seasonOverlay').hidden = !on; }
 
 function soRender(step){
   const total = QUEUE.list.length || 1;
-  const done = QUEUE.qi;
-  $('soFill').style.width = Math.round(100 * done / total) + '%';
-  $('soProg').textContent = done + ' of ' + total + ' competitions played';
+  $('soFill').style.width = Math.round(100 * QUEUE.qi / total) + '%';
+
   if (!step){
     SO.finished = true;
     $('soTitle').textContent = 'Season ' + (ST['world|'] ? ST['world|'].year : 1) + ' complete';
-    $('soBody').innerHTML = '<div class="so-done">Every competition has been played.</div>';
+    $('soProg').textContent = total + ' competitions played';
+    $('soBody').innerHTML = '<div class="so-done">Every match has been played.</div>';
     $('soNext').textContent = 'Close';
     $('soAuto').hidden = true;
     $('soReplay').hidden = !Object.keys(SNAP).length;
     return;
   }
-  $('soTitle').textContent = step.label;
+
+  const { comp, item, n, of } = step;
+  const m = item.m;
+  const A = TEAM[m.a], B = TEAM[m.b];
+  const st = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
+  const wid = m.winner, lid = m.loser;
+  const side = (t, id) => `<div class="so-team ${id === wid ? 'win' : 'lose'}">
+      <img src="${flag(t.iso)}" alt="" width="20" height="14">
+      <span class="so-name">${t.name}</span>
+      <span class="so-val">${num(Math.round(st.val.get(id)))}</span>
+    </div>`;
+  const roundName = m.round === 'bronze' ? 'Third place'
+                  : (typeof m.round === 'string' ? m.round : 'Round ' + m.round);
+
+  $('soTitle').textContent = comp.label;
+  $('soProg').textContent = `Group ${item.group} \u00b7 ${roundName} \u00b7 match ${n} of ${of}` +
+    `  \u2014  ${QUEUE.qi} of ${total} competitions`;
   $('soAuto').hidden = false;
   $('soReplay').hidden = true;
   $('soNext').textContent = 'Continue';
-
-  // a short read of what happened: group winners, and who went up or down
-  const rows = step.res.map((r, gi) => {
-    const win = r.order && r.order[0] != null ? TEAM[r.order[0]] : null;
-    const up = (r.pro || []).length, dn = (r.rel || []).length;
-    return `<div class="so-row">
-      <span>${step.res.length > 1 ? 'Group ' + String.fromCharCode(65 + gi) + ' \u00b7 ' : ''}
-        ${win ? win.name : '\u2014'}</span>
-      <span>${up ? `<span class="so-up">&#9650;${up}</span> ` : ''}${dn ? `<span class="so-dn">&#9660;${dn}</span>` : ''}
-        <b>${r.matches.length}</b> games</span></div>`;
-  }).join('');
-  $('soBody').innerHTML = rows || '<div class="so-done">Nothing to play here.</div>';
+  $('soBody').innerHTML = `<div class="so-match">
+      ${side(A, m.a)}
+      <div class="so-vs">v</div>
+      ${side(B, m.b)}
+    </div>
+    <div class="so-take">${m.take
+      ? TEAM[wid].name + ' takes ' + num(m.take)
+      : 'No value changes hands'}</div>`;
 }
 
 function soStep(){
-  const step = stepSeason();
+  const step = stepMatch();
   soRender(step);
-  saveSoon();
-  if (!step){ SO.running = false; SO.auto = false; return; }
-  if (SO.auto) setTimeout(soStep, 60);      // yield so the bar can paint
+  if (!step){ SO.running = false; SO.auto = false; saveSoon(); return; }
+  if (SO.auto) setTimeout(soStep, SO.speed || 220);
+  else saveSoon();
+}
+
+/* Skip the rest of the competition on screen and stop at the next one. With
+   thousands of matches in a season, watching every one of them is a choice
+   rather than an obligation. */
+function soSkipComp(){
+  if (!QUEUE.cur) { soStep(); return; }
+  QUEUE.mi = QUEUE.cur.flat.length;
+  soStep();
 }
 
 $('worldSeason').onclick = () => {
@@ -4107,7 +4180,8 @@ $('soNext').onclick = () => {
   if (SO.finished){ soShow(false); SO.finished = false; draw(); return; }
   soStep();
 };
-$('soAuto').onclick = () => { SO.auto = true; soStep(); };
+$('soAuto').onclick = () => { SO.auto = true; SO.speed = 40; soStep(); };
+$('soSkip').onclick = () => soSkipComp();
 $('soQuit').onclick = () => { SO.auto = false; soShow(false); draw(); };
 
 /* Replay: same groups, same teams, same values as at kick-off -- different
