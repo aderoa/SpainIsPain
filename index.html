@@ -3248,12 +3248,25 @@ const QUEUE = {list:[], qi:0, playing:false, replay:0,
    This keeps a copy of everything a season mutates (values, ranks, deltas,
    results) for every competition, taken the moment a season begins. Groups are
    deliberately NOT restored: they are what the replay is meant to preserve. */
+/* A team is worth ONE thing, everywhere. Each competition used to keep its own
+   `val` Map, seeded fresh from the source data, so a club's World League
+   results never reached its continental campaign and its continental results
+   never reached the national one -- three separate fortunes for the same club,
+   drifting apart. That is why the board's numbers jumped between runs.
+
+   VAL is the single ledger every competition reads and writes. Money won in
+   the World League is carried into the Continental, then the National, then
+   into next year -- which is the point of the mechanic. */
+const VAL = new Map();
+function seedVal(){ TEAM.forEach(t => { if (!VAL.has(t.id)) VAL.set(t.id, t.val); }); }
+
 const SNAP = {};
 
 function snapshotSeason(){
   Object.keys(SNAP).forEach(k => delete SNAP[k]);
+  SNAP.__val = [...VAL];                       // the shared ledger, once
   Object.entries(ST).forEach(([k, st]) => {
-    SNAP[k] = { val: [...st.val], rank: [...st.rank], delta: [...st.delta],
+    SNAP[k] = { rank: [...st.rank], delta: [...st.delta],
                 year: st.year, free: JSON.parse(JSON.stringify(st.free)),
                 member: JSON.parse(JSON.stringify(st.member)) };
   });
@@ -3262,10 +3275,11 @@ function snapshotSeason(){
 
 function restoreSeason(){
   if (!Object.keys(SNAP).length) return false;
+  if (SNAP.__val){ VAL.clear(); SNAP.__val.forEach(([id, v]) => VAL.set(id, v)); }
   Object.entries(SNAP).forEach(([k, snap]) => {
+    if (k === '__val') return;
     const st = ST[k];
     if (!st) return;
-    st.val = new Map(snap.val);
     st.rank = new Map(snap.rank);
     st.delta = new Map(snap.delta);
     st.year = snap.year;
@@ -3477,9 +3491,10 @@ function fresh(){
   const teams = branchTeams().sort((a, b) => b.val - a.val);
   const salt = Math.floor(Math.random() * 1e9);
   const shape = tiers(teams.length, BRANCH[S.branch], salt);
-  const st = {shape, salt, year:1, rank:new Map(), seed:new Map(), val:new Map(),
+  seedVal();
+  const st = {shape, salt, year:1, rank:new Map(), seed:new Map(), val:VAL,
               member:[], groups:[], free:[], result:null, delta:new Map()};
-  teams.forEach((t, i) => { st.seed.set(t.id, i + 1); st.val.set(t.id, t.val); });
+  teams.forEach((t, i) => st.seed.set(t.id, i + 1));
   let start = 0;
   shape.forEach(sizes => {
     const squad = teams.slice(start, start + total(sizes)).map(t => t.id);
@@ -3695,7 +3710,7 @@ const unpackRank = a => new Map(a.map(([id, d, p]) => [id, {d, p}]));
 function encode(withResults){
   const out = {live: LIVE, ui: {branch: S.branch, scope: S.scope, div: S.div},
                layout: LAYOUT, queue: {qi: QUEUE.qi, replay: QUEUE.replay},
-               snap: SNAP, st: {}};
+               snap: SNAP, val: [...VAL], st: {}};
   Object.entries(ST).forEach(([k, st]) => {
     out.st[k] = {
       shape: st.shape, salt: st.salt, year: st.year, member: st.member, groups: st.groups,
@@ -3721,11 +3736,13 @@ function decode(json){
   if (o.queue){ QUEUE.qi = o.queue.qi || 0; QUEUE.replay = o.queue.replay || 0; }
   Object.keys(SNAP).forEach(k => delete SNAP[k]);
   if (o.snap) Object.assign(SNAP, o.snap);
+  VAL.clear();
+  if (o.val) o.val.forEach(([id, v]) => VAL.set(id, v));
   Object.keys(ST).forEach(k => delete ST[k]);
   Object.entries(o.st).forEach(([k, d]) => {
     const st = {shape: d.shape, salt: d.salt || Math.floor(Math.random() * 1e9),
                 year: d.year, member: d.member, groups: d.groups,
-                free: d.free, seed: new Map(d.seed), val: new Map(d.val),
+                free: d.free, seed: new Map(d.seed), val: VAL,
                 rank: unpackRank(d.rank), delta: new Map(d.delta), result: null};
     if (d.result) st.result = {
       year: d.result.year, up: d.result.up, down: d.result.down,
