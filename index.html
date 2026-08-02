@@ -4145,16 +4145,19 @@ function soBracket(item, st){
   const rounds = [];
   main.forEach(m => { (rounds[m.round - 1] = rounds[m.round - 1] || []).push(m); });
 
-  /* A team is on the board as soon as the match that PUT IT THERE has been
-     played, not when its own match is. So a semi-finalist appears the moment
-     he wins his quarter, and the bracket advances in front of you instead of
-     staying blank until its own tie comes round. Round one is known from the
-     draw; a bye has no feeder and is likewise known. */
-  const known = id => {
-    const feeder = main.find(x => x.winner === id && all.indexOf(x) <= upto);
-    return !!feeder;
+  /* A team belongs in round r only once it has won its round r-1 tie. The
+     first version asked merely "has this team won any played match", so a
+     quarter-final winner appeared in the FINAL as well as the semis -- the
+     bracket ran ahead of the games. Look at the immediately preceding round
+     only. A team with no tie in that round had a bye and is known from the
+     draw. */
+  const seen = (m, id) => {
+    if (m.round === 1) return true;
+    const prev = main.filter(x => x.round === m.round - 1);
+    const feeder = prev.find(x => x.a === id || x.b === id);
+    if (!feeder) return true;                       // bye
+    return feeder.winner === id && all.indexOf(feeder) <= upto;
   };
-  const seen = (m, id) => m.round === 1 || known(id);
 
   const cell = (m) => {
     const idx = all.indexOf(m);
