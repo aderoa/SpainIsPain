@@ -3417,6 +3417,17 @@ function stepMatch(){
     }));
     QUEUE.cur = { comp, flat, live: VAL };
     QUEUE.mi = 0;
+    if (QUEUE.resumeAt){                       // replay the takes we had already seen
+      const upto = Math.min(QUEUE.resumeAt, flat.length);
+      for (let i = 0; i < upto; i++){
+        const m = flat[i].m;
+        if (!m.take) continue;
+        VAL.set(m.winner, (VAL.get(m.winner) || 0) + m.take);
+        VAL.set(m.loser,  (VAL.get(m.loser)  || 0) - m.take);
+      }
+      QUEUE.mi = upto;
+      QUEUE.resumeAt = 0;
+    }
     if (!flat.length) continue;                          // a group of one: skip on
   }
   const item = QUEUE.cur.flat[QUEUE.mi++];
@@ -3804,7 +3815,15 @@ const unpackRank = a => new Map(a.map(([id, d, p]) => [id, {d, p}]));
 
 function encode(withResults){
   const out = {live: LIVE, ui: {branch: S.branch, scope: S.scope, div: S.div},
-               layout: LAYOUT, queue: {qi: QUEUE.qi, replay: QUEUE.replay, mi: QUEUE.mi},
+               layout: LAYOUT,
+               queue: {qi: QUEUE.qi, replay: QUEUE.replay, mi: QUEUE.mi,
+                       /* The competition on screen has already advanced qi, so
+                          store the ledger as it stood when that competition
+                          began. On reload we rewind to it, recompute the
+                          competition (deterministic from the seed) and replay
+                          the takes up to the match we had reached. */
+                       curVal: (QUEUE.cur && QUEUE.mi < QUEUE.cur.flat.length)
+                                 ? [...QUEUE.cur.comp.val0] : null},
                snap: SNAP, val: [...VAL], st: {}};
   Object.entries(ST).forEach(([k, st]) => {
     out.st[k] = {
@@ -3833,7 +3852,8 @@ function decode(json){
   Object.keys(LAYOUT).forEach(k => delete LAYOUT[k]);
   if (o.layout) Object.assign(LAYOUT, o.layout);
   if (o.queue){ QUEUE.qi = o.queue.qi || 0; QUEUE.replay = o.queue.replay || 0;
-                QUEUE.savedMi = o.queue.mi || 0; }
+                QUEUE.savedMi = o.queue.mi || 0;
+                QUEUE.savedVal = o.queue.curVal || null; }
   Object.keys(SNAP).forEach(k => delete SNAP[k]);
   if (o.snap) Object.assign(SNAP, o.snap);
   /* Restoring the ledger. A save written before the shared ledger existed has
@@ -4505,6 +4525,15 @@ $('worldSeason').onclick = () => {
   if (!QUEUE.list.length){
     buildQueue();
     QUEUE.qi = Math.min(wasAt, QUEUE.list.length);
+    /* Mid-competition when we stopped: step back onto it, put the ledger where
+       it was at its first match, and let stepMatch fast-forward to the game we
+       had reached. */
+    if (QUEUE.savedMi > 0 && QUEUE.qi > 0){
+      QUEUE.qi--;
+      if (QUEUE.savedVal){ VAL.clear(); QUEUE.savedVal.forEach(([id, v]) => VAL.set(id, v)); }
+      QUEUE.resumeAt = QUEUE.savedMi;
+    }
+    QUEUE.savedMi = 0; QUEUE.savedVal = null;
   } else if (QUEUE.qi >= QUEUE.list.length){
     buildQueue();                              // the season is over: start again
   }
