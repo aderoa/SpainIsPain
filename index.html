@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
-<!-- build 2026-08-02c · preview + palmarès + rollover + team history + watched-only recording -->
+<!-- build 2026-08-02d · + bronze/relegation brackets, larger panel -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -205,14 +205,34 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .bk-tbd{color:var(--dim,#aab2ba);justify-content:center}
 .bk-champ{border-color:var(--accent,#0a7);background:rgba(0,170,119,.1)}
 .bk-side{font-size:11px;color:var(--dim,#6b7783);display:flex;flex-direction:column;gap:2px;padding-top:6px}
-.so-box{width:min(860px,100%)}
+/* The panel was 860px wide with 11px type in the bracket and a great deal of
+   empty space around it. There is room; use it. */
+.so-box{width:min(1180px,100%)}
+.so-body{font-size:14px}
+.so-title{font-size:19px}
+.so-prog{font-size:13px}
 
-.bk-t{gap:5px}
-.bk-v{font-style:normal;margin-left:auto;font-size:9.5px;font-variant-numeric:tabular-nums;
+.bk-t{gap:7px;font-size:13px;padding:5px 8px}
+.bk-v{font-style:normal;margin-left:auto;font-size:11.5px;font-variant-numeric:tabular-nums;
   color:var(--dim,#98a2ab);flex:0 0 auto}
 .bk-t.bk-wait{opacity:1}
 .bk-t.bk-wait .bk-v{opacity:.7}
-.bk-col{min-width:150px}
+.bk-col{min-width:196px}
+.bk-h{font-size:11.5px}
+.bk{gap:18px}
+/* the third-place game sits below the final, inside the same column */
+.bk-col-final{justify-content:center;gap:0}
+.bk-h2{margin-top:18px}
+.bk-relwrap{margin-top:14px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08)}
+.bk-rel-h{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--dim,#8a949e);margin-bottom:2px}
+.so-team{font-size:14px;padding:11px 14px}
+.so-val{font-size:13px}
+.so-take,.so-pv{font-size:13px}
+.tb-r{font-size:12.5px}
+.tb-col{min-width:210px}
+.tb-head{font-size:14px}
+.pal-h5,.pal-r,.tm-h,.tm-r,.tm-hh,.tm-hr{font-size:12.5px}
 
 .tb-head{font-size:13px;font-weight:650;margin-bottom:8px}
 .tb-wrap{overflow-x:auto}.tb{display:flex;gap:16px}.tb-col{min-width:190px}
@@ -3269,7 +3289,22 @@ function runGroup(st, ids, roll){
   const matches = [], exit = new Map();
   let alive = slots, round = 0, firstLosers = [];
   const rounds = [];
+  let bronze = null;
   while (alive.length > 1){
+    /* The third-place game goes BEFORE the final, the way a real tournament
+       runs it: the two beaten semi-finalists are known the moment the semis
+       finish and there is nothing for them to wait for. Two teams left alive
+       means the next round IS the final, so this is the moment. Done here
+       rather than by shuffling the list afterwards, so the order the matches
+       are PLAYED is the order they are shown -- the money moves in the same
+       sequence the viewer watches. */
+    if (alive.length === 2 && !bronze && rounds.length){
+      const semi = rounds[rounds.length - 1];
+      if (semi.length === 2){
+        bronze = playMatch(st, semi[0].loser, semi[1].loser, roll);
+        bronze.round = 'bronze'; matches.push(bronze);
+      }
+    }
     round++;
     const next = [], here = [];
     for (let i = 0; i < alive.length; i += 2){
@@ -3284,15 +3319,10 @@ function runGroup(st, ids, roll){
     alive = next;
   }
   const champ = alive[0];
-  const semis = rounds[rounds.length - 2] || [];
   const finalM = rounds[rounds.length - 1][0];
   const second = finalM ? finalM.loser : null;
   let third = null, fourth = null;
-  if (semis.length === 2){
-    const bronze = playMatch(st, semis[0].loser, semis[1].loser, roll);
-    bronze.round = 'bronze'; matches.push(bronze);
-    third = bronze.winner; fourth = bronze.loser;
-  }
+  if (bronze){ third = bronze.winner; fourth = bronze.loser; }
 
   // loser bracket — winners are safe, the last ones standing go down
   const need = relPer(n);
@@ -4624,7 +4654,7 @@ function soBracket(item, L, preview){
       const t = TEAM[id];
       const v = L && L.get(id);
       return `<div class="bk-t ${played ? (isWin ? 'bk-win' : 'bk-lose') : 'bk-wait'}" data-team="${id}">
-        <img src="${flag(t.iso)}" alt="" width="14" height="10">
+        <img src="${flag(t.iso)}" alt="" width="16" height="11">
         <span>${t.name}</span>
         ${v != null ? `<i class="bk-v">${num(Math.round(v))}</i>` : ''}</div>`;
     };
@@ -4638,22 +4668,47 @@ function soBracket(item, L, preview){
     const left = rounds.length - r;
     return left === 1 ? 'Final' : left === 2 ? 'Semis' : left === 3 ? 'Quarters' : 'Round ' + (r + 1);
   };
-  const cols = rounds.map((ms, r) =>
-    `<div class="bk-col"><div class="bk-h">${label(r)}</div>${ms.map(cell).join('')}</div>`).join('');
+  /* The third-place game hangs UNDER the final, in the same column: it is the
+     same depth in the draw and settled at the same point, so it reads as part
+     of that last stage rather than as a round of its own. */
+  const bronzeM = all.find(m => m.round === 'bronze');
+  const cols = rounds.map((ms, r) => {
+    const last = r === rounds.length - 1;
+    const under = last && bronzeM
+      ? `<div class="bk-h bk-h2">Third place</div>${cell(bronzeM)}` : '';
+    return `<div class="bk-col ${last ? 'bk-col-final' : ''}"><div class="bk-h">${label(r)}</div>${ms.map(cell).join('')}${under}</div>`;
+  }).join('');
 
   const finalM = rounds[rounds.length - 1] && rounds[rounds.length - 1][0];
   const done = finalM && all.indexOf(finalM) <= upto;
   const champ = done ? `<div class="bk-col"><div class="bk-h">Winner</div>
-      <div class="bk-m bk-champ"><div class="bk-t bk-win">
-        <img src="${flag(TEAM[finalM.winner].iso)}" alt="" width="14" height="10">
+      <div class="bk-m bk-champ"><div class="bk-t bk-win" data-team="${finalM.winner}">
+        <img src="${flag(TEAM[finalM.winner].iso)}" alt="" width="16" height="11">
         <span>${TEAM[finalM.winner].name}</span>
         <i class="bk-v">${num(Math.round(L.get(finalM.winner) || 0))}</i></div></div></div>` : '';
 
-  const side = all.filter(m => typeof m.round === 'string' && all.indexOf(m) <= upto);
-  const extra = side.length ? `<div class="bk-side">${side.map(m =>
-    `<span>${m.round === 'bronze' ? 'Third place' : 'Relegation'}: <b>${TEAM[m.winner].name}</b> beat ${TEAM[m.loser].name}</span>`).join('')}</div>` : '';
+  /* Relegation. The play-off is a knockout of its own -- first-round losers
+     paired off, the winners safe, the losers going again -- so it is drawn as
+     a bracket rather than listed as a footnote. The rounds are not numbered on
+     the match, but they can be read off the shape: a tie whose entrants
+     include a loser from the round being built starts the next one. */
+  const saves = all.filter(m => m.round === 'save');
+  let relBk = '';
+  if (saves.length){
+    const relRounds = [];
+    saves.forEach(m => {
+      let cur = relRounds[relRounds.length - 1];
+      if (!cur || cur.some(x => x.loser === m.a || x.loser === m.b)){ cur = []; relRounds.push(cur); }
+      cur.push(m);
+    });
+    const relCols = relRounds.map((ms, r) =>
+      `<div class="bk-col"><div class="bk-h">${
+        r === relRounds.length - 1 ? 'Last stand' : 'Play-off ' + (r + 1)}</div>${ms.map(cell).join('')}</div>`).join('');
+    relBk = `<div class="bk-relwrap"><div class="bk-rel-h">Relegation play-off
+      &mdash; the winners stay up</div><div class="bk-wrap"><div class="bk">${relCols}</div></div></div>`;
+  }
 
-  return `<div class="bk-wrap"><div class="bk">${cols}${champ}</div></div>${extra}`;
+  return `<div class="bk-wrap"><div class="bk">${cols}${champ}</div></div>${relBk}`;
 }
 
 function soRender(step){
