@@ -3307,6 +3307,7 @@ const SNAP = {};
 function snapshotSeason(){
   Object.keys(SNAP).forEach(k => delete SNAP[k]);
   SNAP.__val = [...VAL];                       // the shared ledger, once
+  SNAP.__year = ST['world|'] ? ST['world|'].year : 1;
   Object.entries(ST).forEach(([k, st]) => {
     SNAP[k] = { rank: [...st.rank], delta: [...st.delta],
                 year: st.year, free: JSON.parse(JSON.stringify(st.free)),
@@ -3317,9 +3318,19 @@ function snapshotSeason(){
 
 function restoreSeason(){
   if (!Object.keys(SNAP).length) return false;
-  if (SNAP.__val){ VAL.clear(); SNAP.__val.forEach(([id, v]) => VAL.set(id, v)); }
+  /* Put the money back to where the season began. A snapshot only counts if
+     it belongs to the season being replayed -- one left over from an earlier
+     year would restore the wrong figures, which is how replays kept starting
+     from inflated values. With nothing trustworthy to fall back on, the source
+     data is the honest answer. */
+  const yNow = ST['world|'] ? ST['world|'].year : 1;
+  if (SNAP.__val && SNAP.__year === yNow){
+    VAL.clear(); SNAP.__val.forEach(([id, v]) => VAL.set(id, v));
+  } else {
+    VAL.clear(); TEAM.forEach(t => VAL.set(t.id, t.val));
+  }
   Object.entries(SNAP).forEach(([k, snap]) => {
-    if (k === '__val') return;
+    if (k === '__val' || k === '__year') return;
     const st = ST[k];
     if (!st) return;
     st.rank = new Map(snap.rank);
