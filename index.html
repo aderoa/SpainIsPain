@@ -195,12 +195,12 @@ circle.t.hi{fill:var(--warn);opacity:1}
   text-align:center;margin-bottom:2px}
 .bk-m{border:1px solid var(--line,#e0e5ea);border-radius:6px;overflow:hidden;background:rgba(0,0,0,.015)}
 .bk-m.bk-live{border-color:var(--accent,#0a7);box-shadow:0 0 0 2px rgba(0,170,119,.18)}
-.bk-m.bk-todo{opacity:.4}
+.bk-m.bk-todo{opacity:1}
 .bk-t{display:flex;align-items:center;gap:5px;padding:3px 6px;font-size:11px;line-height:1.3}
 .bk-t+.bk-t{border-top:1px solid rgba(0,0,0,.07)}
 .bk-t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-win{font-weight:650}
-.bk-lose{opacity:.5}
+.bk-lose{opacity:.72}
 .bk-tbd{color:var(--dim,#aab2ba);justify-content:center}
 .bk-champ{border-color:var(--accent,#0a7);background:rgba(0,170,119,.1)}
 .bk-side{font-size:11px;color:var(--dim,#6b7783);display:flex;flex-direction:column;gap:2px;padding-top:6px}
@@ -209,9 +209,24 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .bk-t{gap:5px}
 .bk-v{font-style:normal;margin-left:auto;font-size:9.5px;font-variant-numeric:tabular-nums;
   color:var(--dim,#98a2ab);flex:0 0 auto}
-.bk-t.bk-wait{opacity:.78}
+.bk-t.bk-wait{opacity:1}
 .bk-t.bk-wait .bk-v{opacity:.7}
 .bk-col{min-width:150px}
+
+.tb-head{font-size:13px;font-weight:650;margin-bottom:8px}
+.tb-wrap{overflow-x:auto}.tb{display:flex;gap:16px}.tb-col{min-width:190px}
+.tb-r{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:2px 5px;border-radius:4px}
+.tb-rup{background:rgba(0,170,119,.11)}.tb-rdn{background:rgba(204,51,51,.09)}
+.tb-p{width:16px;text-align:right;color:var(--dim,#98a2ab);font-variant-numeric:tabular-nums}
+.tb-n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-v{font-style:normal;font-size:10px;color:var(--dim,#98a2ab);font-variant-numeric:tabular-nums}
+.tb-up{color:#0a7;font-weight:700}.tb-dn{color:#c33;font-weight:700}
+.tb-foot{display:flex;gap:14px;font-size:11.5px;padding-top:9px;margin-top:8px;border-top:1px solid rgba(0,0,0,.08)}
+.sm-h,.sm-r{display:grid;grid-template-columns:1.1fr 1.4fr 1.4fr;gap:10px;font-size:11.5px;padding:3px 0}
+.sm-h{font-weight:650;border-bottom:1px solid rgba(0,0,0,.12);margin-bottom:4px}
+.sm-r{border-bottom:1px solid rgba(0,0,0,.05)}
+.sm-k{font-weight:600}.sm-u{color:#0a7}.sm-d{color:#c33}
+.sm-wrap{max-height:46vh;overflow:auto}
 </style>
 </head>
 <body>
@@ -3377,9 +3392,16 @@ function stepMatch(){
     const comp = stepSeason();
     if (!comp) { QUEUE.cur = null; return null; }        // season complete
     // flatten every group's matches, group by group
+    /* Nothing is relegated OUT of the bottom division, so its relegation
+       play-offs decide nothing and are not worth watching. The third-place
+       game stays -- that is a real placing. */
+    const stB = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
+    const bottom = stB && comp.entry.div === stB.shape.length - 1;
     const flat = [];
-    comp.res.forEach((r, gi) => (r.matches || []).forEach((m, k) =>
-      flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r })));
+    comp.res.forEach((r, gi) => (r.matches || []).forEach((m, k) => {
+      if (bottom && typeof m.round === 'string' && m.round !== 'bronze') return;
+      flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r });
+    }));
     QUEUE.cur = { comp, flat, live: new Map(comp.val0) };
     QUEUE.mi = 0;
     if (!flat.length) continue;                          // a group of one: skip on
@@ -4204,7 +4226,7 @@ $('next').onclick = () => { const st = state(); rollOver(st); expand(); draw(); 
    can be read. Continue advances one; "Play the rest" runs to the end without
    stopping. Nothing here computes a result -- stepSeason does that -- this is
    only the screen around it. */
-const SO = {running:false, auto:false, finished:false};
+const SO = {running:false, auto:false, finished:false, pendingTable:null};
 
 function soShow(on){ $('seasonOverlay').hidden = !on; }
 
@@ -4289,7 +4311,7 @@ function soRender(step){
     SO.finished = true;
     $('soTitle').textContent = 'Season ' + (ST['world|'] ? ST['world|'].year : 1) + ' complete';
     $('soProg').textContent = total + ' competitions played';
-    $('soBody').innerHTML = '<div class="so-done">Every match has been played.</div>';
+    $('soBody').innerHTML = soSummary();
     $('soNext').textContent = 'Close';
     $('soReplay').hidden = !Object.keys(SNAP).length;
     return;
@@ -4324,8 +4346,66 @@ function soRender(step){
     ${soBracket(item, L)}`;
 }
 
+function soTable(comp){
+  const st = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
+  const L = QUEUE.cur ? QUEUE.cur.live : st.val;
+  const up = new Set(), dn = new Set();
+  comp.res.forEach(r => { (r.pro || []).forEach(id => up.add(id));
+                          (r.rel || []).forEach(id => dn.add(id)); });
+  const cols = comp.res.map((r, gi) => {
+    const rows = (r.order || []).map((id, i) => {
+      const t = TEAM[id];
+      const mark = up.has(id) ? '<span class="tb-up">&#9650;</span>'
+                 : dn.has(id) ? '<span class="tb-dn">&#9660;</span>' : '';
+      return `<div class="tb-r ${up.has(id) ? 'tb-rup' : dn.has(id) ? 'tb-rdn' : ''}">
+        <span class="tb-p">${i + 1}</span>
+        <img src="${flag(t.iso)}" alt="" width="14" height="10">
+        <span class="tb-n">${t.name}</span>
+        <i class="tb-v">${num(Math.round(L.get(id)))}</i>${mark}</div>`;
+    }).join('');
+    return `<div class="tb-col">${comp.res.length > 1
+      ? `<div class="bk-h">Group ${String.fromCharCode(65 + gi)}</div>` : ''}${rows}</div>`;
+  }).join('');
+  const n = up.size, m = dn.size;
+  return `<div class="tb-head">${comp.label} &mdash; final table</div>
+    <div class="tb-wrap"><div class="tb">${cols}</div></div>
+    <div class="tb-foot">${n ? `<span class="tb-up">&#9650; ${n} promoted</span>` : ''}
+      ${m ? `<span class="tb-dn">&#9660; ${m} relegated</span>` : ''}
+      ${!n && !m ? 'No movement from this division' : ''}</div>`;
+}
+
+function soSummary(){
+  const y = ST['world|'] ? ST['world|'].year : 1;
+  const byComp = {};
+  HIST.filter(h => h.y === y).forEach(h => {
+    const k = (h.s || BRANCH[h.b].label) + ' \u2014 D' + (h.d + 1);
+    (byComp[k] = byComp[k] || {up:[], dn:[]});
+    byComp[k].up.push(...h.up); byComp[k].dn.push(...h.dn);
+  });
+  const rows = Object.entries(byComp).filter(([, v]) => v.up.length || v.dn.length)
+    .map(([k, v]) => `<div class="sm-r"><span class="sm-k">${k}</span>
+      <span class="sm-u">${v.up.map(id => TEAM[id].name).join(', ') || '&mdash;'}</span>
+      <span class="sm-d">${v.dn.map(id => TEAM[id].name).join(', ') || '&mdash;'}</span></div>`).join('');
+  return `<div class="so-done">Season ${y} complete</div>
+    <div class="sm-h"><span class="sm-k">Competition</span><span class="sm-u">Promoted</span><span class="sm-d">Relegated</span></div>
+    <div class="sm-wrap">${rows || '<div class="so-done">Nothing moved.</div>'}</div>`;
+}
+
 function soStep(){
+  /* The last match of a competition has been watched -- show its final table
+     before the queue rolls on, so promotion and relegation are read where they
+     happen rather than only in the season summary. */
+  if (SO.pendingTable){
+    const comp = SO.pendingTable; SO.pendingTable = null;
+    $('soTitle').textContent = comp.label;
+    $('soProg').textContent = `${QUEUE.qi} of ${QUEUE.list.length} competitions`;
+    $('soBody').innerHTML = soTable(comp);
+    $('soNext').textContent = 'Continue';
+    $('soReplay').hidden = true;
+    return;
+  }
   const step = stepMatch();
+  if (step && step.lastOfComp) SO.pendingTable = step.comp;
   soRender(step);
   if (!step){ SO.running = false; SO.auto = false; saveSoon(); return; }
   if (SO.auto) setTimeout(soStep, SO.speed || 220);
@@ -4372,7 +4452,7 @@ $('soQuit').onclick = () => { SO.auto = false; soShow(false); draw(); };
    results, because the roll is seeded with a replay counter. */
 $('soReplay').onclick = () => {
   if (!restoreSeason()){ alert('No season snapshot to replay from.'); return; }
-  SO.finished = false; SO.auto = false;
+  SO.finished = false; SO.auto = false; SO.pendingTable = null;
   soStep();
   saveSoon();
 };
