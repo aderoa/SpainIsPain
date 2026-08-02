@@ -205,6 +205,13 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .bk-champ{border-color:var(--accent,#0a7);background:rgba(0,170,119,.1)}
 .bk-side{font-size:11px;color:var(--dim,#6b7783);display:flex;flex-direction:column;gap:2px;padding-top:6px}
 .so-box{width:min(860px,100%)}
+
+.bk-t{gap:5px}
+.bk-v{font-style:normal;margin-left:auto;font-size:9.5px;font-variant-numeric:tabular-nums;
+  color:var(--dim,#98a2ab);flex:0 0 auto}
+.bk-t.bk-wait{opacity:.78}
+.bk-t.bk-wait .bk-v{opacity:.7}
+.bk-col{min-width:150px}
 </style>
 </head>
 <body>
@@ -4130,7 +4137,7 @@ function soShow(on){ $('seasonOverlay').hidden = !on; }
    Only the main bracket is drawn -- the relegation mini-rounds and the bronze
    game are listed underneath rather than forced into the tree, because they
    do not share its shape. */
-function soBracket(item){
+function soBracket(item, st){
   const all = item.res.matches || [];
   const upto = item.k;                                    // matches already shown
   const main = all.filter(m => typeof m.round === 'number');
@@ -4139,18 +4146,33 @@ function soBracket(item){
   const rounds = [];
   main.forEach(m => { (rounds[m.round - 1] = rounds[m.round - 1] || []).push(m); });
 
-  const cell = (m, idx) => {
-    const shown = all.indexOf(m) <= upto;
-    const live = all.indexOf(m) === upto;
+  /* A team is on the board as soon as the match that PUT IT THERE has been
+     played, not when its own match is. So a semi-finalist appears the moment
+     he wins his quarter, and the bracket advances in front of you instead of
+     staying blank until its own tie comes round. Round one is known from the
+     draw; a bye has no feeder and is likewise known. */
+  const known = id => {
+    const feeder = main.find(x => x.winner === id && all.indexOf(x) <= upto);
+    return !!feeder;
+  };
+  const seen = (m, id) => m.round === 1 || known(id);
+
+  const cell = (m) => {
+    const idx = all.indexOf(m);
+    const played = idx <= upto;
+    const live = idx === upto;
     const one = (id, isWin) => {
-      if (!shown) return '<div class="bk-t bk-tbd">&mdash;</div>';
+      if (!seen(m, id)) return '<div class="bk-t bk-tbd">&mdash;</div>';
       const t = TEAM[id];
-      return `<div class="bk-t ${isWin ? 'bk-win' : 'bk-lose'}">
-        <img src="${flag(t.iso)}" alt="" width="14" height="10"><span>${t.name}</span></div>`;
+      const v = st && st.val.get(id);
+      return `<div class="bk-t ${played ? (isWin ? 'bk-win' : 'bk-lose') : 'bk-wait'}">
+        <img src="${flag(t.iso)}" alt="" width="14" height="10">
+        <span>${t.name}</span>
+        ${v != null ? `<i class="bk-v">${num(Math.round(v))}</i>` : ''}</div>`;
     };
-    return `<div class="bk-m ${live ? 'bk-live' : ''} ${shown ? '' : 'bk-todo'}">
-      ${one(m.a, shown && m.winner === m.a)}
-      ${one(m.b, shown && m.winner === m.b)}
+    return `<div class="bk-m ${live ? 'bk-live' : ''} ${played ? '' : 'bk-todo'}">
+      ${one(m.a, played && m.winner === m.a)}
+      ${one(m.b, played && m.winner === m.b)}
     </div>`;
   };
 
@@ -4161,13 +4183,13 @@ function soBracket(item){
   const cols = rounds.map((ms, r) =>
     `<div class="bk-col"><div class="bk-h">${label(r)}</div>${ms.map(cell).join('')}</div>`).join('');
 
-  // the champion, once the final is in
   const finalM = rounds[rounds.length - 1] && rounds[rounds.length - 1][0];
   const done = finalM && all.indexOf(finalM) <= upto;
   const champ = done ? `<div class="bk-col"><div class="bk-h">Winner</div>
       <div class="bk-m bk-champ"><div class="bk-t bk-win">
         <img src="${flag(TEAM[finalM.winner].iso)}" alt="" width="14" height="10">
-        <span>${TEAM[finalM.winner].name}</span></div></div></div>` : '';
+        <span>${TEAM[finalM.winner].name}</span>
+        <i class="bk-v">${num(Math.round(st.val.get(finalM.winner)))}</i></div></div></div>` : '';
 
   const side = all.filter(m => typeof m.round === 'string' && all.indexOf(m) <= upto);
   const extra = side.length ? `<div class="bk-side">${side.map(m =>
@@ -4218,7 +4240,7 @@ function soRender(step){
     <div class="so-take">${m.take
       ? TEAM[wid].name + ' takes ' + num(m.take)
       : 'No value changes hands'}</div>
-    ${soBracket(item)}`;
+    ${soBracket(item, st)}`;
 }
 
 function soStep(){
