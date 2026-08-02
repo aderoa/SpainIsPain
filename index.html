@@ -3730,14 +3730,23 @@ function encode(withResults){
 }
 function decode(json){
   const o = JSON.parse(json);
-  LIVE = o.live;
+  LIVE = o.live || LIVE;
   Object.keys(LAYOUT).forEach(k => delete LAYOUT[k]);
   if (o.layout) Object.assign(LAYOUT, o.layout);
   if (o.queue){ QUEUE.qi = o.queue.qi || 0; QUEUE.replay = o.queue.replay || 0; }
   Object.keys(SNAP).forEach(k => delete SNAP[k]);
   if (o.snap) Object.assign(SNAP, o.snap);
+  /* Restoring the ledger. A save written before the shared ledger existed has
+     no `o.val` -- it kept a copy per competition instead -- and simply clearing
+     VAL left every team undefined, which is where the NaNs came from. Take the
+     shared ledger if it is there, fall back to whatever the old per-competition
+     maps held, and finally top up from the source data so no team is ever
+     without a value. */
   VAL.clear();
-  if (o.val) o.val.forEach(([id, v]) => VAL.set(id, v));
+  if (o.val && o.val.length) o.val.forEach(([id, v]) => VAL.set(id, v));
+  else Object.values(o.st || {}).forEach(d =>
+    (d.val || []).forEach(([id, v]) => { if (!VAL.has(id)) VAL.set(id, v); }));
+  seedVal();                                   // anyone still missing
   Object.keys(ST).forEach(k => delete ST[k]);
   Object.entries(o.st).forEach(([k, d]) => {
     const st = {shape: d.shape, salt: d.salt || Math.floor(Math.random() * 1e9),
