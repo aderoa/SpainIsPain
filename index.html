@@ -3413,8 +3413,10 @@ function stepMatch(){
     L.set(item.m.winner, (L.get(item.m.winner) || 0) + item.m.take);
     L.set(item.m.loser,  (L.get(item.m.loser)  || 0) - item.m.take);
   }
+  const nxt = QUEUE.cur.flat[QUEUE.mi];
   return { comp: QUEUE.cur.comp, item, live: QUEUE.cur.live,
            n: QUEUE.mi, of: QUEUE.cur.flat.length,
+           lastOfGroup: !nxt || nxt.gi !== item.gi,      // the group is finished
            lastOfComp: QUEUE.mi >= QUEUE.cur.flat.length };
 }
 
@@ -4346,13 +4348,14 @@ function soRender(step){
     ${soBracket(item, L)}`;
 }
 
-function soTable(comp){
+function soTable(comp, only){
   const st = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
   const L = QUEUE.cur ? QUEUE.cur.live : st.val;
   const up = new Set(), dn = new Set();
   comp.res.forEach(r => { (r.pro || []).forEach(id => up.add(id));
                           (r.rel || []).forEach(id => dn.add(id)); });
   const cols = comp.res.map((r, gi) => {
+    if (only != null && gi !== only) return '';
     const rows = (r.order || []).map((id, i) => {
       const t = TEAM[id];
       const mark = up.has(id) ? '<span class="tb-up">&#9650;</span>'
@@ -4366,6 +4369,13 @@ function soTable(comp){
     return `<div class="tb-col">${comp.res.length > 1
       ? `<div class="bk-h">Group ${String.fromCharCode(65 + gi)}</div>` : ''}${rows}</div>`;
   }).join('');
+  // when a single group is shown, count only its own movement
+  if (only != null){
+    const r = comp.res[only] || {};
+    up.clear(); dn.clear();
+    (r.pro || []).forEach(id => up.add(id));
+    (r.rel || []).forEach(id => dn.add(id));
+  }
   const n = up.size, m = dn.size;
   return `<div class="tb-head">${comp.label} &mdash; final table</div>
     <div class="tb-wrap"><div class="tb">${cols}</div></div>
@@ -4396,16 +4406,21 @@ function soStep(){
      before the queue rolls on, so promotion and relegation are read where they
      happen rather than only in the season summary. */
   if (SO.pendingTable){
-    const comp = SO.pendingTable; SO.pendingTable = null;
+    const { comp, gi } = SO.pendingTable; SO.pendingTable = null;
     $('soTitle').textContent = comp.label;
-    $('soProg').textContent = `${QUEUE.qi} of ${QUEUE.list.length} competitions`;
-    $('soBody').innerHTML = soTable(comp);
+    $('soProg').textContent = (comp.res.length > 1 && gi != null
+        ? `Group ${String.fromCharCode(65 + gi)} finished \u00b7 ` : '')
+      + `${QUEUE.qi} of ${QUEUE.list.length} competitions`;
+    $('soBody').innerHTML = soTable(comp, gi);
     $('soNext').textContent = 'Continue';
     $('soReplay').hidden = true;
     return;
   }
   const step = stepMatch();
-  if (step && step.lastOfComp) SO.pendingTable = step.comp;
+  /* A recap after every GROUP, not only at the end of the division -- D8 has
+     128 of them, so waiting for the competition meant 944 matches before the
+     first table. The division-wide card still follows the last group. */
+  if (step && step.lastOfGroup) SO.pendingTable = { comp: step.comp, gi: step.item.gi };
   soRender(step);
   if (!step){ SO.running = false; SO.auto = false; saveSoon(); return; }
   if (SO.auto) setTimeout(soStep, SO.speed || 220);
