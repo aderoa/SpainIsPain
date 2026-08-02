@@ -187,6 +187,24 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .so-val{font-variant-numeric:tabular-nums;font-size:12px;color:var(--dim,#6b7783)}
 .so-vs{font-size:12px;color:var(--dim,#8a949e);flex:0 0 auto}
 .so-take{text-align:center;font-size:12px;color:var(--dim,#6b7783);padding-bottom:4px}
+
+.bk-wrap{overflow-x:auto;padding:10px 0 4px;border-top:1px solid rgba(0,0,0,.08);margin-top:10px}
+.bk{display:flex;gap:14px;align-items:stretch;min-width:min-content}
+.bk-col{display:flex;flex-direction:column;justify-content:space-around;gap:6px;min-width:118px}
+.bk-h{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim,#8a949e);
+  text-align:center;margin-bottom:2px}
+.bk-m{border:1px solid var(--line,#e0e5ea);border-radius:6px;overflow:hidden;background:rgba(0,0,0,.015)}
+.bk-m.bk-live{border-color:var(--accent,#0a7);box-shadow:0 0 0 2px rgba(0,170,119,.18)}
+.bk-m.bk-todo{opacity:.4}
+.bk-t{display:flex;align-items:center;gap:5px;padding:3px 6px;font-size:11px;line-height:1.3}
+.bk-t+.bk-t{border-top:1px solid rgba(0,0,0,.07)}
+.bk-t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-win{font-weight:650}
+.bk-lose{opacity:.5}
+.bk-tbd{color:var(--dim,#aab2ba);justify-content:center}
+.bk-champ{border-color:var(--accent,#0a7);background:rgba(0,170,119,.1)}
+.bk-side{font-size:11px;color:var(--dim,#6b7783);display:flex;flex-direction:column;gap:2px;padding-top:6px}
+.so-box{width:min(860px,100%)}
 </style>
 </head>
 <body>
@@ -3315,8 +3333,8 @@ function stepMatch(){
     if (!comp) { QUEUE.cur = null; return null; }        // season complete
     // flatten every group's matches, group by group
     const flat = [];
-    comp.res.forEach((r, gi) => (r.matches || []).forEach(m =>
-      flat.push({ m, gi, group: String.fromCharCode(65 + gi) })));
+    comp.res.forEach((r, gi) => (r.matches || []).forEach((m, k) =>
+      flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r })));
     QUEUE.cur = { comp, flat };
     QUEUE.mi = 0;
     if (!flat.length) continue;                          // a group of one: skip on
@@ -4103,6 +4121,61 @@ const SO = {running:false, auto:false, finished:false};
 
 function soShow(on){ $('seasonOverlay').hidden = !on; }
 
+/* ── BRACKET ────────────────────────────────────────────────────────────
+   The knockout is drawn column by column, one column per round, with the
+   matches of the group in the order runGroup produced them. Everything up to
+   the match on screen is filled in; everything after is blank, so the bracket
+   fills up as Continue is pressed. The live match is outlined.
+
+   Only the main bracket is drawn -- the relegation mini-rounds and the bronze
+   game are listed underneath rather than forced into the tree, because they
+   do not share its shape. */
+function soBracket(item){
+  const all = item.res.matches || [];
+  const upto = item.k;                                    // matches already shown
+  const main = all.filter(m => typeof m.round === 'number');
+  if (!main.length) return '';
+
+  const rounds = [];
+  main.forEach(m => { (rounds[m.round - 1] = rounds[m.round - 1] || []).push(m); });
+
+  const cell = (m, idx) => {
+    const shown = all.indexOf(m) <= upto;
+    const live = all.indexOf(m) === upto;
+    const one = (id, isWin) => {
+      if (!shown) return '<div class="bk-t bk-tbd">&mdash;</div>';
+      const t = TEAM[id];
+      return `<div class="bk-t ${isWin ? 'bk-win' : 'bk-lose'}">
+        <img src="${flag(t.iso)}" alt="" width="14" height="10"><span>${t.name}</span></div>`;
+    };
+    return `<div class="bk-m ${live ? 'bk-live' : ''} ${shown ? '' : 'bk-todo'}">
+      ${one(m.a, shown && m.winner === m.a)}
+      ${one(m.b, shown && m.winner === m.b)}
+    </div>`;
+  };
+
+  const label = r => {
+    const left = rounds.length - r;
+    return left === 1 ? 'Final' : left === 2 ? 'Semis' : left === 3 ? 'Quarters' : 'Round ' + (r + 1);
+  };
+  const cols = rounds.map((ms, r) =>
+    `<div class="bk-col"><div class="bk-h">${label(r)}</div>${ms.map(cell).join('')}</div>`).join('');
+
+  // the champion, once the final is in
+  const finalM = rounds[rounds.length - 1] && rounds[rounds.length - 1][0];
+  const done = finalM && all.indexOf(finalM) <= upto;
+  const champ = done ? `<div class="bk-col"><div class="bk-h">Winner</div>
+      <div class="bk-m bk-champ"><div class="bk-t bk-win">
+        <img src="${flag(TEAM[finalM.winner].iso)}" alt="" width="14" height="10">
+        <span>${TEAM[finalM.winner].name}</span></div></div></div>` : '';
+
+  const side = all.filter(m => typeof m.round === 'string' && all.indexOf(m) <= upto);
+  const extra = side.length ? `<div class="bk-side">${side.map(m =>
+    `<span>${m.round === 'bronze' ? 'Third place' : 'Relegation'}: <b>${TEAM[m.winner].name}</b> beat ${TEAM[m.loser].name}</span>`).join('')}</div>` : '';
+
+  return `<div class="bk-wrap"><div class="bk">${cols}${champ}</div></div>${extra}`;
+}
+
 function soRender(step){
   const total = QUEUE.list.length || 1;
   $('soFill').style.width = Math.round(100 * QUEUE.qi / total) + '%';
@@ -4144,7 +4217,8 @@ function soRender(step){
     </div>
     <div class="so-take">${m.take
       ? TEAM[wid].name + ' takes ' + num(m.take)
-      : 'No value changes hands'}</div>`;
+      : 'No value changes hands'}</div>
+    ${soBracket(item)}`;
 }
 
 function soStep(){
