@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
-<!-- build 2026-08-02b · bracket preview + palmarès + season rollover + team history -->
+<!-- build 2026-08-02c · preview + palmarès + rollover + team history + watched-only recording -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -3432,6 +3432,45 @@ function h2hFor(id){
                  .sort((a, b) => b.n - a.n || b.w - a.w);
 }
 
+/* One group. A division is computed as a unit -- it has to be, the bracket
+   resolves in one go -- but recording it as a unit meant every winner in it
+   was in the history book before the player had watched a single match of it.
+   The palmares filled in ahead of the games. A group is written down when its
+   last match has actually been seen (or skipped past), not when it was
+   calculated. */
+function recordGroupHistory(entry, r, gi, groups, st){
+  const o = r.order || [];
+  if (!o.length) return;
+  (r.matches || []).forEach(m => h2hAdd(m.a, m.b, m.winner));
+  HIST.push({ y: st.year, b: entry.branch, s: entry.scope || '', d: entry.div,
+              g: groups > 1 ? gi : -1,
+              w: o[0], r2: o[1] != null ? o[1] : -1, r3: o[2] != null ? o[2] : -1,
+              o: o.slice(),
+              up: (r.pro || []).slice(), dn: (r.rel || []).slice(),
+              m: (r.matches || []).length });
+  if (HIST.length > HIST_MAX) HIST = HIST.slice(-HIST_MAX);
+}
+
+/* Write down a group of the competition on screen, once and once only. */
+function recordSeenGroup(gi){
+  const cur = QUEUE.cur;
+  if (!cur || !cur.comp || cur.recorded.has(gi)) return;
+  const st = ST[layoutKey(cur.comp.entry.branch, cur.comp.entry.scope)];
+  if (!st) return;
+  cur.recorded.add(gi);
+  recordGroupHistory(cur.comp.entry, cur.comp.res[gi], gi, cur.comp.res.length, st);
+}
+
+/* Everything the cursor has already passed: used after a skip, and after a
+   resume fast-forwards through games that were watched in an earlier sitting. */
+function recordSeenSoFar(){
+  const cur = QUEUE.cur;
+  if (!cur) return;
+  const last = new Map();                       // group -> index of its final match
+  cur.flat.forEach((it, i) => last.set(it.gi, i));
+  last.forEach((i, gi) => { if (i < QUEUE.mi) recordSeenGroup(gi); });
+}
+
 function recordTournament(entry, res, st){
   res.forEach((r, gi) => {
     const o = r.order || [];
@@ -3580,7 +3619,7 @@ function stepMatch(peek){
       if (bottom && typeof m.round === 'string' && m.round !== 'bronze') return;
       flat.push({ m, gi, k, group: String.fromCharCode(65 + gi), res: r });
     }));
-    QUEUE.cur = { comp, flat, live: VAL };
+    QUEUE.cur = { comp, flat, live: VAL, recorded: new Set() };
     QUEUE.mi = 0;
     if (QUEUE.resumeAt){                       // replay the takes we had already seen
       const upto = Math.min(QUEUE.resumeAt, flat.length);
@@ -3592,8 +3631,15 @@ function stepMatch(peek){
       }
       QUEUE.mi = upto;
       QUEUE.resumeAt = 0;
+      recordSeenSoFar();                       // those groups were watched last time
     }
-    if (!flat.length) continue;                          // a group of one: skip on
+    if (!flat.length){
+      /* Nothing to watch here -- a division of one-team groups, or a bottom
+         division whose only fixtures were relegation play-offs that decide
+         nothing. It still happened, so it still goes in the book. */
+      comp.res.forEach((r, gi) => recordSeenGroup(gi));
+      continue;
+    }
   }
   /* A PEEK hands back the match that is ABOUT to be played: the cursor does
      not move and no money changes hands. Loading a competition is still
@@ -3612,6 +3658,8 @@ function stepMatch(peek){
     VAL.set(item.m.loser,  (VAL.get(item.m.loser)  || 0) - item.m.take);
   }
   const nxt = QUEUE.cur.flat[QUEUE.mi];
+  // its last match has now been seen, so the group goes into the history book
+  if (!nxt || nxt.gi !== item.gi) recordSeenGroup(item.gi);
   return { comp: QUEUE.cur.comp, item, live: QUEUE.cur.live,
            n: QUEUE.mi, of: QUEUE.cur.flat.length,
            lastOfGroup: !nxt || nxt.gi !== item.gi,      // the group is finished
@@ -3693,7 +3741,10 @@ function stepSeason(){
 
   st.divResults = st.divResults || {};
   st.divResults[e.div] = res;
-  recordTournament(e, res, st);
+  /* NOT recorded here. The results exist, but they have not been watched --
+     writing them to the history book now put every winner of the division on
+     the palmares before its first game was shown. Each group is written down
+     as it is reached; see recordSeenGroup. */
   rememberLayout(e.branch, e.scope, st);
 
   QUEUE.qi++;
@@ -4155,6 +4206,20 @@ function renderChrome(st){
   const done = !!st.result;
   $('drawCtl').hidden = done; $('resCtl').hidden = !done;
   $('pool').hidden = done;
+  /* Stop closes the panel but keeps the place. Nothing said so: the button
+     still read "Play the world season", which sounds like starting over, so
+     there appeared to be no way back into a season already underway. */
+  const mid = (QUEUE.qi > 0 || QUEUE.savedMi > 0) &&
+              (!QUEUE.list.length || QUEUE.qi < QUEUE.list.length);
+  const ws = $('worldSeason');
+  if (mid){
+    const at = QUEUE.list.length ? ` \u00b7 ${QUEUE.qi}/${QUEUE.list.length}` : '';
+    ws.textContent = 'Resume world season' + at;
+    ws.title = 'Pick up where you stopped';
+  } else {
+    ws.textContent = 'Play the world season';
+    ws.title = 'Play every competition in order \u2014 World League, then each continent, then each country';
+  }
 }
 function tag(st, id){
   if (st.result){
@@ -4931,6 +4996,7 @@ function soSkipComp(){
     VAL.set(m.loser,  (VAL.get(m.loser)  || 0) - m.take);
   }
   QUEUE.mi = QUEUE.cur.flat.length;
+  recordSeenSoFar();                           // skipped, but they were still played
   soStep();
 }
 
