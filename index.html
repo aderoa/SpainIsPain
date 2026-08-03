@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
-<!-- build 2026-08-02f · + small-group finishing order fix -->
+<!-- build 2026-08-02g · + division recap -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -279,6 +279,23 @@ circle.t.hi{fill:var(--warn);opacity:1}
 .pal-t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pal-tbd{color:var(--dim,#aab2ba)}
 .pal-wrap{max-height:50vh;overflow:auto}
+
+.dv-sec{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
+  margin:14px 0 7px;color:var(--dim,#6b7783)}
+.dv-sec:first-of-type{margin-top:8px}
+.dv-n{font-weight:700;font-variant-numeric:tabular-nums;opacity:.75;margin-left:4px}
+.dv-up{color:#0a7a4f}.dv-dn{color:#b3261e}.dv-el{color:#8a6d0b}.dv-gold{color:#b8860b}
+.dv-list{display:flex;flex-wrap:wrap;gap:6px}
+.dv-t{display:flex;align-items:center;gap:6px;font-size:12.5px;
+  padding:5px 9px;border-radius:7px;background:rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.07);min-width:0}
+.dv-t b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:12rem}
+.dv-g{font-size:10.5px;opacity:.55}
+.dv-v{font-style:normal;font-size:11.5px;font-variant-numeric:tabular-nums;
+  color:var(--dim,#98a2ab)}
+.dv-p{font-weight:800;font-variant-numeric:tabular-nums;font-size:11px;
+  width:15px;text-align:center;opacity:.8}
+.dv-p1{color:#b8860b}.dv-p2{color:#7d8a95}.dv-p3{color:#a0602a}
 
 [data-team]{cursor:pointer}
 [data-team]:hover{text-decoration:underline;text-underline-offset:2px}
@@ -3698,6 +3715,12 @@ function stepMatch(peek){
          division whose only fixtures were relegation play-offs that decide
          nothing. It still happened, so it still goes in the book. */
       comp.res.forEach((r, gi) => recordSeenGroup(gi));
+      /* No match to watch, but a one-team division can still send that team
+         up. Show the card when something actually moved and stay silent when
+         nothing did, rather than making the player click through divisions
+         where nothing happened at all. */
+      if (comp.res.some(r => (r.pro || []).length || (r.elig || []).length || (r.rel || []).length))
+        SO.pendingDiv = comp;
       continue;
     }
   }
@@ -4635,7 +4658,7 @@ $('next').onclick = () => { const st = state(); rollOver(st); expand(); draw(); 
    can be read. Continue advances one; "Play the rest" runs to the end without
    stopping. Nothing here computes a result -- stepSeason does that -- this is
    only the screen around it. */
-const SO = {running:false, auto:false, finished:false, pendingTable:null};
+const SO = {running:false, auto:false, finished:false, pendingTable:null, pendingDiv:null};
 
 function soShow(on){ $('seasonOverlay').hidden = !on; }
 
@@ -4842,6 +4865,58 @@ function soTable(comp, only){
       ${!n && !m && !q ? 'No movement from this division' : ''}</div>`;
 }
 
+/* Everything that leaves a division, in one card.
+   The top flight has nowhere to be promoted TO, so there is no promotion list
+   to show -- what matters there is who actually won it, and the podium goes in
+   its place. Below it, the winners going up are the story. Either way the
+   teams dropping out are listed alongside, because that is the other half of
+   what the division decided. */
+function soDivRecap(comp){
+  const st = ST[layoutKey(comp.entry.branch, comp.entry.scope)];
+  const L = QUEUE.cur ? QUEUE.cur.live : (st ? st.val : VAL);
+  const many = comp.res.length > 1;
+  const top = comp.entry.div === 0;
+
+  const chip = (id, gi, place) => {
+    const t = TEAM[id];
+    if (!t) return '';
+    return `<div class="dv-t" data-team="${id}">
+      ${place ? `<span class="dv-p dv-p${place}">${place}</span>` : ''}
+      <img src="${flag(t.iso)}" alt="" width="16" height="11">
+      <b>${t.name}</b>
+      ${many && gi != null ? `<span class="dv-g">${gLabel(gi)}</span>` : ''}
+      <i class="dv-v">${num(Math.round(L.get(id) || 0))}</i></div>`;
+  };
+
+  const gather = k => {
+    const out = [];
+    comp.res.forEach((r, gi) => (r[k] || []).forEach(id => out.push({ id, gi })));
+    return out;
+  };
+
+  const block = (label, items, cls, placed) => items.length
+    ? `<div class="dv-sec ${cls}">${label} <span class="dv-n">${items.length}</span></div>
+       <div class="dv-list">${items.map(x => chip(x.id, x.gi, placed ? x.place : 0)).join('')}</div>`
+    : '';
+
+  let head = '';
+  if (top){
+    const podium = [];
+    comp.res.forEach((r, gi) => (r.order || []).slice(0, 3)
+      .forEach((id, i) => podium.push({ id, gi, place: i + 1 })));
+    podium.sort((a, b) => a.place - b.place || a.gi - b.gi);
+    head = block('Podium', podium, 'dv-gold', true);
+  } else {
+    head = block('Promoted', gather('pro'), 'dv-up', false) +
+           block('Eligible for promotion', gather('elig'), 'dv-el', false);
+  }
+  const down = block('Relegated', gather('rel'), 'dv-dn', false);
+
+  return `<div class="tb-head">${comp.label} &mdash; division recap</div>
+    ${head || down ? head + down
+      : '<div class="so-done">Nothing moved out of this division.</div>'}`;
+}
+
 function soSummary(){
   const y = ST['world|'] ? ST['world|'].year : 1;
   const byComp = {};
@@ -5032,6 +5107,19 @@ function soFinish(){
   saveSoon();
 }
 
+/* The division card. Returns whether it took the turn, so the callers can
+   simply stop when it did. */
+function soShowDiv(){
+  if (!SO.pendingDiv) return false;
+  const comp = SO.pendingDiv; SO.pendingDiv = null;
+  $('soTitle').textContent = comp.label;
+  $('soProg').textContent = `Division finished \u00b7 ${QUEUE.qi} of ${QUEUE.list.length} competitions`;
+  $('soBody').innerHTML = soDivRecap(comp);
+  $('soNext').textContent = 'Continue';
+  $('soReplay').hidden = true;
+  return true;
+}
+
 function soStep(){
   /* The last match of a competition has been watched -- show its final table
      before the queue rolls on, so promotion and relegation are read where they
@@ -5047,6 +5135,8 @@ function soStep(){
     $('soReplay').hidden = true;
     return;
   }
+  /* ...and then the division as a whole, once its last group has been shown. */
+  if (soShowDiv()) return;
   /* The bracket used to arrive with its opening tie already decided, because
      the first thing the panel ever showed was a played match. Peek at the game
      about to happen: if it is the first of its group, show the empty bracket
@@ -5055,6 +5145,11 @@ function soStep(){
      "play the rest" is not asking to be stopped. */
   if (!SO.auto){
     const peek = stepMatch(true);
+    /* Loading the next competition can itself finish one -- a division with no
+       fixtures is stepped straight past in here -- so ask again before drawing
+       a preview, or its card would appear one press late, behind the next
+       competition's opening bracket. */
+    if (soShowDiv()) return;
     if (!peek){ soFinish(); return; }            // season finished on the peek
     const mark = QUEUE.qi + '|' + peek.item.gi;
     const firstOfGroup = QUEUE.mi === 0 ||
@@ -5072,6 +5167,10 @@ function soStep(){
      128 of them, so waiting for the competition meant 944 matches before the
      first table. The division-wide card still follows the last group. */
   if (step && step.lastOfGroup) SO.pendingTable = { comp: step.comp, gi: step.item.gi };
+  /* Every group of the division is done. The per-group table shows one group's
+     movement; this gathers the whole division into one card, which is the only
+     place the full promoted/relegated list is visible before the season ends. */
+  if (step && step.lastOfComp) SO.pendingDiv = step.comp;
   if (!step){ soFinish(); return; }
   soRender(step);
   try { draw(); } catch (err) {}          // the board follows the ledger
@@ -5084,6 +5183,11 @@ function soStep(){
    rather than an obligation. */
 function soSkipComp(){
   if (!QUEUE.cur) { soStep(); return; }
+  /* Only if there was actually something left to skip. Pressing it again on a
+     competition already at its end re-armed the division recap, which then
+     showed itself, which left the cursor exactly where it was -- the season
+     could not be skipped past that point. */
+  const had = QUEUE.mi < QUEUE.cur.flat.length;
   // settle every remaining match so the ledger stays true if we come back
   for (let i = QUEUE.mi; i < QUEUE.cur.flat.length; i++){
     const m = QUEUE.cur.flat[i].m;
@@ -5093,6 +5197,7 @@ function soSkipComp(){
   }
   QUEUE.mi = QUEUE.cur.flat.length;
   recordSeenSoFar();                           // skipped, but they were still played
+  if (had) SO.pendingDiv = QUEUE.cur.comp;     // skipped or watched, the division is over
   soStep();
 }
 
