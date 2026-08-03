@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>World League</title>
-<!-- build 2026-08-02e · + bronze/relegation brackets, no spoilers, larger panel -->
+<!-- build 2026-08-02f · + small-group finishing order fix -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -3324,9 +3324,17 @@ function runGroup(st, ids, roll){
   let third = null, fourth = null;
   if (bronze){ third = bronze.winner; fourth = bronze.loser; }
 
+  /* Anyone the knockout has ALREADY placed is finished with. In a small group
+     round one is the semi-final, so its losers are the two who played for
+     third -- and they were being sent to the relegation play-off as well,
+     turning up a second time in the final table. A four-team group listed six
+     finishers; a two-team group listed the runner-up twice. */
+  const placed = new Set([champ, second, third, fourth].filter(x => x !== null));
+
   // loser bracket — winners are safe, the last ones standing go down
   const need = relPer(n);
-  let unsafe = firstLosers.slice().sort((a, b) => st.seed.get(a) - st.seed.get(b));
+  let unsafe = firstLosers.filter(id => !placed.has(id))
+                          .sort((a, b) => st.seed.get(a) - st.seed.get(b));
   const saved = [];
   while (unsafe.length > need){
     const k = Math.min(Math.floor(unsafe.length / 2), unsafe.length - need);
@@ -3341,15 +3349,37 @@ function runGroup(st, ids, roll){
   const rel = unsafe;
 
   const bySeed = (a, b) => st.seed.get(a) - st.seed.get(b);
-  const done = new Set([champ, second, third, fourth].filter(x => x !== null));
+  const done = placed;
   const mid = [];
   for (let r = rounds.length - 2; r >= 2; r--){
     mid.push(...ids.filter(id => exit.get(id) === r && !done.has(id)).sort(bySeed));
   }
   const byeSafe = ids.filter(id => !done.has(id) && !exit.has(id) &&
     !saved.includes(id) && !rel.includes(id)).sort(bySeed);
-  const order = [champ, second, third, fourth].filter(x => x !== null)
-    .concat(mid, byeSafe, saved.slice().sort(bySeed), rel.slice().sort(bySeed));
+
+  /* One line per team, whatever route they took through the draw. The lists
+     above are built from different things -- placings, exit rounds, play-off
+     results -- and a team can legitimately qualify for more than one of them,
+     so the table is assembled with a guard rather than by trusting they never
+     overlap. Anyone the knockout somehow never accounted for is appended, so
+     the count always matches the group. */
+  const seen = new Set();
+  const order = [];
+  [champ, second, third, fourth].filter(x => x !== null)
+    .concat(mid, byeSafe, saved.slice().sort(bySeed), rel.slice().sort(bySeed))
+    .forEach(id => { if (id != null && !seen.has(id)){ seen.add(id); order.push(id); } });
+  ids.forEach(id => { if (!seen.has(id)){ seen.add(id); order.push(id); } });
+
+  /* The play-off could not fill the relegation places -- in a small group
+     everybody was placed by the knockout and there was nobody left to send to
+     it. Take the bottom of the finishing order instead, and never so far up
+     that the group's own champion goes down. */
+  if (rel.length < need){
+    const cap = Math.min(need, Math.max(0, order.length - 1));
+    for (let i = order.length - 1; i >= 1 && rel.length < cap; i--){
+      if (!rel.includes(order[i])) rel.push(order[i]);
+    }
+  }
   return {order, matches, rel, pro: []};
 }
 
